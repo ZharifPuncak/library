@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>PUNCAK NIAGA VR LIBRARY TOUR 2</title>
+  <meta charset="utf-8">
+  <meta name="viewport"
+    content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+  <style>
+    @-ms-viewport {
+      width: device-width;
+    }
+  </style>
+  <link rel="stylesheet" href="{{ asset('vr/vendor/reset.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('vr/style.css') }}">
+</head>
+
+<body class="multiple-scenes ">
+
+  <div id="pano"></div>
+
+  <div id="sceneList">
+    <ul class="scenes">
+
+      <a href="javascript:void(0)" class="scene" data-id="0-main-entrance">
+        <li class="text">Main Entrance</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="1-front-desk">
+        <li class="text">Front Desk</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="2-zone-a">
+        <li class="text">Zone A</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="3-bookshelf-zone-1">
+        <li class="text">Bookshelf Zone 1</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="4-bookshelf-zone-2">
+        <li class="text">Bookshelf Zone 2</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="5-bookshelf-zone-3">
+        <li class="text">Bookshelf Zone 3</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="6-bookshelf-zone-4">
+        <li class="text">Bookshelf Zone 4</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="7-work-desk">
+        <li class="text">Work Desk</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="8-trophy-display--workstation-area">
+        <li class="text">Trophy Display &amp; Workstation Area</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="9-zone-b">
+        <li class="text">Zone B</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="10-tv-area">
+        <li class="text">TV Area</li>
+      </a>
+
+      <a href="javascript:void(0)" class="scene" data-id="11-archive-area">
+        <li class="text">Archive Area</li>
+      </a>
+
+    </ul>
+  </div>
+
+  <div id="titleBar">
+    <h1 class="sceneName"></h1>
+  </div>
+
+  <a href="javascript:void(0)" id="autorotateToggle">
+    <img class="icon off" src="{{ asset('vr/img/play.png') }}">
+    <img class="icon on" src="{{ asset('vr/img/pause.png') }}">
+  </a>
+
+  <a href="javascript:void(0)" id="fullscreenToggle">
+    <img class="icon off" src="{{ asset('vr/img/fullscreen.png') }}">
+    <img class="icon on" src="{{ asset('vr/img/windowed.png') }}">
+  </a>
+
+  <a href="javascript:void(0)" id="sceneListToggle">
+    <img class="icon off" src="{{ asset('vr/img/expand.png') }}">
+    <img class="icon on" src="{{ asset('vr/img/collapse.png') }}">
+  </a>
+
+  <a href="javascript:void(0)" id="viewUp" class="viewControlButton viewControlButton-1">
+    <img class="icon" src="{{ asset('vr/img/up.png') }}">
+  </a>
+  <a href="javascript:void(0)" id="viewDown" class="viewControlButton viewControlButton-2">
+    <img class="icon" src="{{ asset('vr/img/down.png') }}">
+  </a>
+  <a href="javascript:void(0)" id="viewLeft" class="viewControlButton viewControlButton-3">
+    <img class="icon" src="{{ asset('vr/img/left.png') }}">
+  </a>
+  <a href="javascript:void(0)" id="viewRight" class="viewControlButton viewControlButton-4">
+    <img class="icon" src="{{ asset('vr/img/right.png') }}">
+  </a>
+  <a href="javascript:void(0)" id="viewIn" class="viewControlButton viewControlButton-5">
+    <img class="icon" src="{{ asset('vr/img/plus.png') }}">
+  </a>
+  <a href="javascript:void(0)" id="viewOut" class="viewControlButton viewControlButton-6">
+    <img class="icon" src="{{ asset('vr/img/minus.png') }}">
+  </a>
+
+  <script>
+    window.VR_BASE_URL = @json(asset('vr'));
+  </script>
+  <script src="{{ asset('vr/vendor/screenfull.min.js') }}"></script>
+  <script src="{{ asset('vr/vendor/bowser.min.js') }}"></script>
+  <script src="{{ asset('vr/vendor/marzipano.js') }}"></script>
+
+  <script src="{{ asset('vr/data.js') }}"></script>
+  <script src="{{ asset('vr/index.js') }}"></script>
+
+</body>
+
+</html>
