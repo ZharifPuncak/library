@@ -14,11 +14,7 @@ class LoginController extends Controller
      */
     protected function redirectTo()
     {
-        if (auth()->check() && auth()->user()->isAdmin()) {
-            return route('admin.dashboard'); // admin redirect ke admin dashboard
-        }
-
-        return route('home'); // user biasa redirect ke home
+        return route('home');
     }
 
     /**
@@ -38,16 +34,6 @@ class LoginController extends Controller
     public function username()
     {
         return 'username'; // login guna username
-    }
-
-    /**
-     * Attempt to log the user into the application.
-     */
-    protected function attemptLogin(\Illuminate\Http\Request $request)
-    {
-        return $this->guard()->attempt(
-            $this->credentials($request), $request->filled('remember')
-        );
     }
 
     /**

@@ -61,108 +61,75 @@
                         </a>
                     </div>
 
-                    <!-- User Area (Desktop) -->
-                    <div class="hidden lg:flex items-center gap-6">
+                    <!-- User Area -->
+                    <div class="flex items-center gap-4">
                         @guest
                             <a href="{{ route('login') }}" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-xs font-bold transition-all">LOGIN</a>
                         @else
-                            <div class="flex items-center gap-3 pr-4 border-r border-white/20 text-right">
-                                <div class="text-[10px] opacity-60 leading-none">Logged in as</div>
-                                <div class="text-sm font-bold leading-tight">{{ Auth::user()->name }}</div>
-                            </div>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="text-xs font-bold text-red-300 hover:text-red-400 transition-colors uppercase tracking-wider" onclick="confirmLogout(event)">
-                                    Logout
+                            <div class="relative" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false" @keydown.escape.window="userMenuOpen = false">
+                                <button type="button" @click="userMenuOpen = !userMenuOpen"
+                                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 transition-all">
+                                    <span class="text-sm font-bold leading-tight">{{ Auth::user()->name }}</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                         class="h-4 w-4 transition-transform"
+                                         :class="userMenuOpen ? 'rotate-180' : ''">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                                    </svg>
                                 </button>
-                            </form>
+
+                                <div x-show="userMenuOpen" x-cloak
+                                     x-transition:enter="transition ease-out duration-150"
+                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-100"
+                                     x-transition:leave-start="opacity-100 translate-y-0"
+                                     x-transition:leave-end="opacity-0 -translate-y-1"
+                                     class="absolute right-0 mt-2 w-48 bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                                    <div class="px-4 py-3 border-b border-slate-100">
+                                        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Signed in as</div>
+                                        <div class="text-sm font-bold text-lib-navy truncate">{{ Auth::user()->name }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" onclick="confirmLogout(event)"
+                                                class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
                         @endguest
                     </div>
-
-                    <!-- Mobile menu button -->
-                    <div class="lg:hidden flex items-center">
-                        <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 focus:outline-none transition-all">
-                            <svg class="h-6 w-6" x-show="!mobileMenuOpen" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                            <svg class="h-6 w-6" x-show="mobileMenuOpen" x-cloak fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Second Bar: Navigation Menu -->
-        <div class="hidden lg:block bg-white border-b border-slate-100">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center gap-8 h-14">
-                    @php
-                        $links = [
-                            ['route' => 'home', 'label' => 'Home', 'icon' => '🏠'],
-                            ['route' => 'assets.all', 'label' => 'All Media', 'icon' => '📂'],
-                            ['route' => 'assets.photos', 'label' => 'Photos', 'icon' => '📸'],
-                            ['route' => 'assets.videos', 'label' => 'Videos', 'icon' => '🎬'],
-                            ['route' => 'assets.ebooks', 'label' => 'e-books', 'icon' => '📚'],
-                            ['route' => 'collections.index', 'label' => 'Collections', 'icon' => '🖼️'],
-                            ['route' => 'vr', 'label' => 'VR', 'icon' => '🥽'],
-                        ];
-                    @endphp
-                    @foreach($links as $link)
-                        <a href="{{ route($link['route']) }}" 
-                           class="flex items-center gap-2 text-sm font-bold {{ request()->routeIs($link['route']) ? 'text-lib-sky border-b-2 border-lib-sky' : 'text-slate-600 hover:text-lib-navy' }} transition-colors h-full">
-                            <span>{{ $link['icon'] }}</span> {{ $link['label'] }}
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-
-        <!-- Mobile menu dropdown -->
-        <div class="lg:hidden bg-lib-navy" x-show="mobileMenuOpen" x-cloak 
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 -translate-y-4"
-             x-transition:enter-end="opacity-100 translate-y-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 translate-y-0"
-             x-transition:leave-end="opacity-0 -translate-y-4">
-            <div class="px-2 pt-2 pb-3 space-y-1">
-                @foreach($links as $link)
-                    <a href="{{ route($link['route']) }}" 
-                       class="flex items-center gap-3 px-4 py-4 rounded-2xl text-base font-black uppercase tracking-widest {{ request()->routeIs($link['route']) ? 'bg-lib-sky text-white' : 'text-sky-100 hover:bg-white/5' }}">
-                        <span>{{ $link['icon'] }}</span>
-                        {{ $link['label'] }}
-                    </a>
-                @endforeach
-            </div>
-            <div class="pt-4 pb-6 border-t border-white/10">
-                @guest
-                    <div class="px-5">
-                        <a href="{{ route('login') }}" class="block text-center bg-white text-lib-navy py-4 rounded-2xl font-black uppercase tracking-widest">Login</a>
-                    </div>
-                @else
-                    <div class="flex items-center px-6 mb-6">
-                        <div class="h-12 w-12 rounded-2xl bg-lib-sky flex items-center justify-center font-black text-white shadow-lg">
-                            {{ substr(Auth::user()->name, 0, 1) }}
-                        </div>
-                        <div class="ml-4">
-                            <div class="text-xs font-black text-sky-400 uppercase tracking-widest leading-none mb-1">User</div>
-                            <div class="text-lg font-black text-white leading-none">{{ Auth::user()->name }}</div>
-                        </div>
-                    </div>
-                    <div class="px-2">
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="block w-full text-left px-6 py-4 rounded-2xl text-base font-black text-red-400 hover:bg-red-500 hover:text-white transition-all uppercase tracking-widest" onclick="confirmLogout(event)">
-                                term. session (_)
-                            </button>
-                        </form>
-                    </div>
-                @endguest
-            </div>
-        </div>
     </header>
+
+    <!-- Page Nav Pills: Media / Users (sticky below header, content centered vertically) -->
+    @auth
+        @php
+            $mediaActive = request()->routeIs('media.*') || request()->routeIs('collections.*');
+            $usersActive = request()->routeIs('users.*');
+        @endphp
+        <div class="sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav class="flex justify-center items-center gap-2 h-14">
+                    <a href="{{ route('media.index') }}"
+                       class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $mediaActive ? 'bg-lib-navy text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Media
+                    </a>
+                    <a href="#"
+                       class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $usersActive ? 'bg-lib-navy text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        Users
+                    </a>
+                </nav>
+            </div>
+        </div>
+    @endauth
 
     <!-- Main Content -->
     <main class="flex-grow">

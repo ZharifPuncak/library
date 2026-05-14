@@ -1,232 +1,440 @@
 @extends('layouts.app')
 
-@section('title', 'All Media')
+@section('title', 'Discover')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ filterMobileOpen: {{ request('filters') === 'open' ? 'true' : 'false' }} }">
-    <!-- Header -->
-    <div class="mb-10">
-        <h1 class="text-4xl font-black text-lib-navy uppercase tracking-tighter mb-2">All Media</h1>
-        <p class="text-slate-500 font-medium text-lg">Access our comprehensive corporate repository. From historical records to modern operational milestones, explore every asset in our digital collection.</p>
-    </div>
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    <!-- Controls -->
-    <div class="flex flex-col md:flex-row gap-4 mb-12">
-        <div class="flex-grow relative group">
-            <form action="{{ route('assets.all') }}" method="GET" class="relative">
-                <input type="text" name="search" placeholder="Search archive..." value="{{ request('search') }}"
-                       class="w-full pl-14 {{ request('search') ? 'pr-52' : 'pr-32' }} py-5 bg-white border-none rounded-3xl focus:ring-4 focus:ring-lib-sky/20 transition-all font-bold text-lib-navy shadow-sm group-hover:shadow-md">
-                
-                <div class="absolute left-5 top-1/2 -translate-y-1/2 text-lib-sky opacity-40 group-focus-within:opacity-100 transition-opacity">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
+    /* Entrance animations */
+    @keyframes fade-up {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
 
-                @if(request('search'))
-                    <a href="{{ route('assets.all', request()->except('search')) }}" 
-                       class="absolute right-36 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600 font-bold text-xs transition-colors uppercase tracking-wide">
-                        CLEAR
-                    </a>
-                @endif
-                
-                <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 bg-lib-navy hover:bg-lib-sky text-white px-7 py-3 rounded-2xl font-bold transition-all text-sm">
-                    Search
-                </button>
-            </form>
-        </div>
-        <button @click="filterMobileOpen = true" class="relative flex items-center justify-center gap-3 bg-white hover:bg-lib-light border border-slate-200 text-lib-navy px-7 py-3 rounded-2xl font-bold transition-all shadow-sm hover:shadow-md text-sm">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-            Refine
+    .anim-fade-up { opacity: 0; animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .anim-fade-in { opacity: 0; animation: fade-in 0.5s ease-out forwards; }
+
+    /* Stagger children */
+    .stagger > * { opacity: 0; animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+    .stagger > *:nth-child(1)  { animation-delay: 0.03s; }
+    .stagger > *:nth-child(2)  { animation-delay: 0.06s; }
+    .stagger > *:nth-child(3)  { animation-delay: 0.09s; }
+    .stagger > *:nth-child(4)  { animation-delay: 0.12s; }
+    .stagger > *:nth-child(5)  { animation-delay: 0.15s; }
+    .stagger > *:nth-child(6)  { animation-delay: 0.18s; }
+    .stagger > *:nth-child(7)  { animation-delay: 0.21s; }
+    .stagger > *:nth-child(8)  { animation-delay: 0.24s; }
+    .stagger > *:nth-child(9)  { animation-delay: 0.27s; }
+    .stagger > *:nth-child(10) { animation-delay: 0.30s; }
+    .stagger > *:nth-child(11) { animation-delay: 0.33s; }
+    .stagger > *:nth-child(12) { animation-delay: 0.36s; }
+    .stagger > *:nth-child(n+13) { animation-delay: 0.40s; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .anim-fade-up, .anim-fade-in, .stagger > * {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+    }
+</style>
+@php
+    $defaultThumb = asset('images/logo.png');
+    $typeLabels = [
+        'photo' => 'Photo',
+        'video' => 'Video',
+        'ebook' => 'Ebook',
+    ];
+
+    $activeCategoryIds = collect(request('categories', []))->map(fn ($id) => (int) $id)->all();
+    $baseQuery        = request()->except(['categories', 'page']);
+@endphp
+
+<div class="bg-slate-50 min-h-[calc(100vh-5rem)]">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-12 gap-6">
+
+            {{-- ============ LEFT SIDEBAR (mobile: horizontal pills) ============ --}}
             @php
-                $filterCount = count(request('categories', [])) + (request('year') ? 1 : 0);
+                $currentType = strtolower((string) request('type'));
+                $navItems = [
+                    ['label' => 'Discover',   'icon' => 'home',       'route' => route('media.index'),                      'active' => $currentType === '',                  'count' => $typeCounts['total']],
+                    ['label' => 'Photos',     'icon' => 'photo',      'route' => route('media.index', ['type' => 'photo']), 'active' => $currentType === 'photo',             'count' => $typeCounts['photo']],
+                    ['label' => 'Videos',     'icon' => 'video',      'route' => route('media.index', ['type' => 'video']), 'active' => $currentType === 'video',             'count' => $typeCounts['video']],
+                    ['label' => 'E-books',    'icon' => 'ebook',      'route' => route('media.index', ['type' => 'ebook']), 'active' => $currentType === 'ebook',             'count' => $typeCounts['ebook']],
+                    ['divider' => true],
+                    ['label' => 'Collection', 'icon' => 'collection', 'route' => route('collections.index'),                'active' => request()->routeIs('collections.*'),  'count' => null],
+                    ['label' => 'My List',    'icon' => 'list',       'route' => '#',                                       'active' => false,                                'count' => null],
+                    ['label' => 'VR Tour',    'icon' => 'vr',         'route' => route('vr'),                               'active' => false,                                'count' => null],
+                ];
             @endphp
-            @if($filterCount > 0)
-                <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-black rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
-                    {{ $filterCount }}
-                </span>
-            @endif
-        </button>
-    </div>
+            @php
+                $iconSvg = function ($icon) {
+                    return match ($icon) {
+                        'home'       => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>',
+                        'photo'      => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
+                        'video'      => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>',
+                        'ebook'      => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>',
+                        'collection' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
+                        'list'       => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>',
+                        'vr'         => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>',
+                        default      => '',
+                    };
+                };
+            @endphp
 
-    <!-- Media Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 auto-rows-fr">
-        @forelse($assets as $asset)
-            <div class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col font-fredoka"
-                 onmouseenter="this.querySelector('video')?.play()" 
-                 onmouseleave="this.querySelector('video')?.load()">
-                <!-- Media Preview -->
-                <div class="relative h-48 overflow-hidden bg-slate-100">
-                    <a href="{{ route('assets.show', $asset->id) }}" class="block h-full w-full">
-                        @php
-                            $type = strtolower($asset->type);
-                            $isThumbnail = !empty($asset->thumbnail_path);
-                        @endphp
+            {{-- Small screens: horizontal scrollable pill bar (sticky below header) --}}
+            <div class="col-span-12 lg:hidden sticky top-32 md:top-36 z-30 -mx-4 sm:mx-0 px-4 sm:px-0 pt-2 pb-2 bg-slate-50">
+                <nav class="bg-white rounded-3xl p-2 shadow-md border border-slate-100 relative"
+                     x-data="{
+                        canScrollLeft: false,
+                        canScrollRight: false,
+                        update() {
+                            const el = this.$refs.scroller;
+                            this.canScrollLeft  = el.scrollLeft > 4;
+                            this.canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+                        },
+                        scrollBy(dir) {
+                            this.$refs.scroller.scrollBy({ left: dir * 160, behavior: 'smooth' });
+                        }
+                     }"
+                     x-init="update(); $nextTick(update); window.addEventListener('resize', update)">
 
-                        @if($type === 'video')
-                            <video src="{{ asset('storage/' . $asset->file_path) }}" 
-                                   @if($isThumbnail) poster="{{ asset('storage/' . $asset->thumbnail_path) }}" @endif
-                                   class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                                   muted playsinline></video>
-                            <div class="absolute inset-0 bg-black/5 group-hover:bg-black/20 flex items-center justify-center transition-colors pointer-events-none">
-                                <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 opacity-100 group-hover:opacity-0 transition-opacity">
-                                    <svg class="h-6 w-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                </div>
-                            </div>
-                        @else
-                            @if($type === 'photo')
-                                <img src="{{ asset('storage/' . $asset->file_path) }}" 
-                                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                                     alt="{{ $asset->title }}">
-                            @else
-                                {{-- E-book Support --}}
-                                @if($isThumbnail)
-                                    <img src="{{ asset('storage/' . $asset->thumbnail_path) }}" 
-                                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                                         alt="{{ $asset->title }}">
-                                @else
-                                    {{-- Premium e-book placeholder --}}
-                                    <div class="w-full h-full bg-gradient-to-br from-lib-navy to-lib-sky flex flex-col items-center justify-center text-white p-6">
-                                        <div class="w-16 h-20 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 mb-3 group-hover:scale-110 transition-transform">
-                                            <span class="text-4xl">📚</span>
-                                        </div>
-                                        <div class="text-center">
-                                            <span class="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 block">Digital Archive</span>
-                                            <span class="text-[8px] font-bold opacity-40 uppercase">E-BOOK RESOURCE</span>
-                                        </div>
-                                    </div>
-                                @endif
-                            @endif
-                        @endif
-
-                        <!-- Type Badge -->
-                        <div class="absolute top-3 left-3 z-20">
-                            <span class="bg-white/90 backdrop-blur-md text-lib-navy px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
-                                {{ $asset->type }}
-                            </span>
-                        </div>
-                    </a>
-                </div>
-
-                <!-- Info -->
-                <div class="p-4 flex-grow flex flex-col">
-                    <div class="flex-grow">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[9px] font-black text-lib-sky uppercase tracking-[0.2em]">{{ $asset->categories->first()->name ?? 'Asset' }}</span>
-                        </div>
-                        <a href="{{ route('assets.show', $asset->id) }}" class="block">
-                            <h3 class="text-base font-bold text-slate-800 leading-tight mb-2 group-hover:text-lib-sky transition-colors line-clamp-2">
-                                {{ $asset->title }}
-                            </h3>
-                        </a>
-
-                        <!-- Tagging Section -->
-                        <div class="mt-3 flex items-center gap-1.5 overflow-hidden">
-                            <svg class="h-3 w-3 text-slate-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            <div class="flex flex-wrap gap-1.5 overflow-hidden">
-                                @foreach($asset->tags->take(2) as $tag)
-                                    <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100/50 whitespace-nowrap">#{{ $tag->name }}</span>
-                                @endforeach
-                                @if($asset->tags->count() > 2)
-                                    <span class="text-[10px] font-black text-lib-sky bg-lib-light px-2 py-0.5 rounded-lg">+{{ $asset->tags->count() - 2 }}</span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 flex items-center justify-between text-[10px] text-slate-300 border-t border-slate-50 pt-3">
-                        <span class="font-bold uppercase tracking-wider">
-                            {{ $asset->created_at->format('M d, Y') }}
+                    {{-- Left fade + arrow --}}
+                    <button type="button" @click="scrollBy(-1)" x-show="canScrollLeft" x-cloak
+                            class="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-1 pr-3 bg-gradient-to-r from-white via-white to-transparent rounded-l-3xl"
+                            aria-label="Scroll left">
+                        <span class="w-7 h-7 rounded-full bg-white shadow-md border border-slate-100 flex items-center justify-center text-lib-navy">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                         </span>
-                        <div class="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-lib-sky group-hover:text-white transition-colors">
-                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
-                        </div>
+                    </button>
+
+                    {{-- Right fade + arrow --}}
+                    <button type="button" @click="scrollBy(1)" x-show="canScrollRight" x-cloak
+                            class="absolute right-0 top-0 bottom-0 z-10 flex items-center pr-1 pl-3 bg-gradient-to-l from-white via-white to-transparent rounded-r-3xl"
+                            aria-label="Scroll right">
+                        <span class="w-7 h-7 rounded-full bg-white shadow-md border border-slate-100 flex items-center justify-center text-lib-navy">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+                    </button>
+
+                    <div x-ref="scroller" @scroll.passive="update"
+                         class="flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth">
+                        @foreach($navItems as $item)
+                            @if(!empty($item['divider']))
+                                <span class="h-6 w-px bg-slate-200 mx-1 flex-shrink-0" aria-hidden="true"></span>
+                            @else
+                                <a href="{{ $item['route'] }}"
+                                   class="flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 {{ $item['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-500 hover:bg-slate-50 hover:text-lib-navy' }}">
+                                    <span class="w-5 h-5 flex items-center justify-center">{!! $iconSvg($item['icon']) !!}</span>
+                                    <span>{{ $item['label'] }}</span>
+                                    @if(!is_null($item['count'] ?? null))
+                                        <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {{ $item['active'] ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500' }}">{{ $item['count'] }}</span>
+                                    @endif
+                                </a>
+                            @endif
+                        @endforeach
                     </div>
-                </div>
+                </nav>
             </div>
-        @empty
-            <div class="col-span-full py-20 text-center">
-                <div class="bg-slate-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">🔍</div>
-                <h3 class="text-2xl font-black text-lib-navy">No results found</h3>
-                <p class="text-slate-400 font-medium mt-2">Try adjusting your filters or search terms</p>
-                <a href="{{ route('assets.all') }}" class="inline-block mt-8 px-10 py-4 bg-lib-blue text-white rounded-2xl font-black hover:bg-lib-navy transition-all shadow-xl shadow-lib-blue/20">Reset Archive</a>
-            </div>
-        @endforelse
-    </div>
 
-    <!-- Pagination -->
-    <div class="mt-16">
-        {{ $assets->appends(request()->query())->links() }}
-    </div>
+            {{-- Desktop: vertical sidebar + tag filter --}}
+            <aside class="hidden lg:block lg:col-span-2">
+                @php
+                    $activeTag = request('tag') ? (int) request('tag') : null;
+                    $tagBaseQuery = request()->except(['tag', 'page']);
+                @endphp
 
-    <!-- Filter Modal -->
-    <template x-teleport="body">
-        <div x-show="filterMobileOpen" x-cloak 
-             class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-lib-navy/40 backdrop-blur-md"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0">
-            
-            <div @click.away="filterMobileOpen = false" 
-                 class="bg-white w-full sm:max-w-md rounded-t-[3.5rem] sm:rounded-[4rem] p-10 pb-12 shadow-2xl relative"
-                 x-transition:enter="transition ease-out duration-500"
-                 x-transition:enter-start="translate-y-full sm:scale-90 sm:translate-y-0"
-                 x-transition:enter-end="translate-y-0 sm:scale-100 sm:translate-y-0">
-                
-                <div @click="filterMobileOpen = false" class="absolute right-8 top-8 p-3 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 cursor-pointer transition-all">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
-                </div>
+                <div class="sticky top-36 md:top-40 space-y-4 max-h-[calc(100vh-11rem)] overflow-y-auto no-scrollbar">
+                    @php
+                        // Split nav items into separate cards at every `divider` entry.
+                        $navSections = [];
+                        $section     = [];
+                        foreach ($navItems as $entry) {
+                            if (!empty($entry['divider'])) {
+                                if (!empty($section)) {
+                                    $navSections[] = $section;
+                                    $section = [];
+                                }
+                            } else {
+                                $section[] = $entry;
+                            }
+                        }
+                        if (!empty($section)) {
+                            $navSections[] = $section;
+                        }
+                    @endphp
 
-                <div class="mb-10 text-center sm:text-left">
-                    <h2 class="text-3xl font-black text-lib-navy">Refine Search</h2>
-                    <p class="text-slate-400 font-medium mt-1">Sift through our corporate collection</p>
-                </div>
+                    @foreach($navSections as $section)
+                        <nav class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+                            <ul class="space-y-1">
+                                @foreach($section as $item)
+                                    <li>
+                                        <a href="{{ $item['route'] }}"
+                                           class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all {{ $item['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-500 hover:bg-slate-50 hover:text-lib-navy' }}">
+                                            <span class="w-5 h-5 flex items-center justify-center">{!! $iconSvg($item['icon']) !!}</span>
+                                            <span class="hidden xl:inline">{{ $item['label'] }}</span>
+                                            @if(!is_null($item['count'] ?? null))
+                                                <span class="hidden xl:inline-block ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold {{ $item['active'] ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500' }}">{{ $item['count'] }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </nav>
+                    @endforeach
 
-                <form action="{{ route('assets.all') }}" method="GET" class="space-y-10">
-                    @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
-                    
-                    <div>
-                        <h3 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-6">By Category</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            @foreach($categories as $category)
-                                <label class="cursor-pointer group">
-                                    <input type="checkbox" name="categories[]" value="{{ $category->id }}"
-                                           {{ in_array($category->id, request('categories', [])) ? 'checked' : '' }}
-                                           class="hidden peer">
-                                    <div class="px-4 py-3 text-center rounded-2xl border-2 border-slate-50 text-xs font-bold text-slate-400 peer-checked:bg-lib-sky peer-checked:border-lib-sky peer-checked:text-white transition-all group-hover:border-slate-200">
-                                        {{ $category->name }}
-                                    </div>
-                                </label>
+                {{-- Tag filter --}}
+                @if($tags->isNotEmpty())
+                    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+                        <div class="flex items-center justify-between mb-3 px-1">
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tags</h3>
+                            @if($activeTag)
+                                <a href="{{ route('media.index', $tagBaseQuery) }}"
+                                   class="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors">Clear</a>
+                            @endif
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach($tags as $tag)
+                                <a href="{{ route('media.index', array_merge($tagBaseQuery, ['tag' => $tag->id])) }}"
+                                   class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors {{ $activeTag === $tag->id ? 'bg-lib-sky text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-lib-navy' }}">
+                                    #{{ $tag->name }}
+                                </a>
                             @endforeach
                         </div>
                     </div>
+                @endif
+                </div>
+            </aside>
 
-                    <div>
-                        <h3 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4">By Timeline</h3>
-                        <input type="number" name="year" value="{{ request('year') }}" placeholder="Enter year (YYYY)..."
-                               class="w-full bg-slate-50 border-none rounded-2xl py-5 focus:ring-2 focus:ring-lib-sky transition-all font-black text-center text-lg text-lib-navy">
+            {{-- ============ MAIN COLUMN ============ --}}
+            <section class="col-span-12 lg:col-span-10 space-y-6">
+
+                <div id="categories" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                    @php
+                        $clearUrl = route('media.index', request()->except(['search', 'page']));
+                    @endphp
+                    <form action="{{ route('media.index') }}" method="GET" class="mb-5"
+                          x-data="{ query: @js((string) request('search')), hadSearch: @js((bool) request('search')) }"
+                          x-init="$watch('query', value => {
+                              if (hadSearch && value.trim() === '') {
+                                  window.location.href = @js($clearUrl);
+                              }
+                          })">
+                        {{-- Preserve existing filter state (type, categories, year) on submit --}}
+                        @foreach(request()->except(['search', 'page']) as $key => $value)
+                            @if(is_array($value))
+                                @foreach($value as $v)
+                                    <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                                @endforeach
+                            @else
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endif
+                        @endforeach
+
+                        <div class="relative flex items-center gap-2">
+                            <div class="relative flex-grow">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                </span>
+                                <input type="search" name="search" x-model="query" value="{{ request('search') }}"
+                                       placeholder="Search media…"
+                                       autocomplete="off"
+                                       autocorrect="off"
+                                       autocapitalize="off"
+                                       spellcheck="false"
+                                       class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-transparent rounded-2xl text-sm font-medium text-lib-navy placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-lib-sky focus:bg-white transition-all">
+                            </div>
+                            @if(request('search'))
+                                <a href="{{ $clearUrl }}"
+                                   class="px-4 py-3 rounded-2xl text-xs font-bold text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors">Clear</a>
+                            @endif
+                            <button type="submit"
+                                    :disabled="!query.trim()"
+                                    :class="query.trim()
+                                        ? 'bg-lib-sky hover:bg-lib-navy text-white shadow-md shadow-lib-sky/30 cursor-pointer'
+                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'"
+                                    class="px-6 py-3 rounded-2xl text-sm font-bold transition-colors whitespace-nowrap">
+                                Search
+                            </button>
+                        </div>
+
+                        @if(request('search'))
+                            <p class="mt-3 text-xs text-slate-500 px-1">
+                                Found <span class="font-bold text-lib-navy">{{ $assets->total() }}</span>
+                                {{ Str::plural('result', $assets->total()) }} for
+                                <span class="font-bold text-lib-navy">"{{ request('search') }}"</span>
+                            </p>
+                        @endif
+                    </form>
+
+                    {{-- Category pills (server-side filter) --}}
+                    @php
+                        // Show first 4 categories ("All" + 4 = 5 visible pills).
+                        $visibleLimit      = 4;
+                        $visibleCategories = $categories->take($visibleLimit);
+                        $hiddenCategories  = $categories->slice($visibleLimit);
+                        // If an active filter lives in the hidden bucket, expand by default.
+                        $hiddenHasActive   = $hiddenCategories->pluck('id')->intersect($activeCategoryIds)->isNotEmpty();
+
+                        $currentSort = strtolower((string) request('sort')) === 'oldest' ? 'oldest' : 'newest';
+                        $nextSort    = $currentSort === 'newest' ? 'oldest' : 'newest';
+                        $sortQuery   = array_merge(request()->except(['page']), ['sort' => $nextSort]);
+
+                        // $view is set by the controller from the query string or the persisted cookie.
+                        $currentView = $view ?? 'grid';
+                        $nextView    = $currentView === 'grid' ? 'list' : 'grid';
+                        $viewQuery   = array_merge(request()->except(['page']), ['view' => $nextView]);
+                    @endphp
+
+                    <div x-data="{ expanded: @js($hiddenHasActive) }" class="flex flex-wrap items-center gap-2 mb-6">
+                        <a href="{{ route('media.index', $baseQuery) }}"
+                           class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ empty($activeCategoryIds) ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">All</a>
+
+                        @foreach($visibleCategories as $cat)
+                            <a href="{{ route('media.index', array_merge($baseQuery, ['categories' => [$cat->id]])) }}"
+                               class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ in_array($cat->id, $activeCategoryIds, true) ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">{{ $cat->name }}</a>
+                        @endforeach
+
+                        @if($hiddenCategories->isNotEmpty())
+                            @foreach($hiddenCategories as $cat)
+                                <a href="{{ route('media.index', array_merge($baseQuery, ['categories' => [$cat->id]])) }}"
+                                   x-show="expanded" x-cloak
+                                   class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ in_array($cat->id, $activeCategoryIds, true) ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">{{ $cat->name }}</a>
+                            @endforeach
+
+                            <button type="button" @click="expanded = !expanded"
+                                    class="w-8 h-7 inline-flex items-center justify-center rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-lib-navy transition-colors"
+                                    :aria-label="expanded ? 'Show fewer categories' : 'Show all categories'"
+                                    :title="expanded ? 'Show less' : 'Show all'">
+                                <svg x-show="!expanded" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                                <svg x-show="expanded" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+                            </button>
+                        @endif
+
+                        <div class="ml-auto flex items-center gap-2">
+                            {{-- View toggle (grid ↔ list) --}}
+                            <a href="{{ route('media.index', $viewQuery) }}"
+                               title="Switch to {{ $nextView }} view"
+                               aria-label="Toggle view mode"
+                               class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-50 hover:bg-lib-light text-slate-600 hover:text-lib-navy transition-colors">
+                                @if($currentView === 'grid')
+                                    {{-- Currently grid — show list icon for next state --}}
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                                @else
+                                    {{-- Currently list — show grid icon for next state --}}
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                                @endif
+                            </a>
+
+                            {{-- Sort toggle (newest ↔ oldest by created_at) --}}
+                            <a href="{{ route('media.index', $sortQuery) }}"
+                               title="Sort by date added — currently {{ $currentSort }} first. Click for {{ $nextSort }}."
+                               aria-label="Toggle sort order"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 hover:bg-lib-light text-slate-600 hover:text-lib-navy text-xs font-bold transition-colors">
+                                @if($currentSort === 'newest')
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h5m12 8l-4-4m0 0l4-4m-4 4h12"/></svg>
+                                    <span>Newest</span>
+                                @else
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9M3 12h9m4 0l4 4m0 0l-4 4m4-4H8"/></svg>
+                                    <span>Oldest</span>
+                                @endif
+                            </a>
+                        </div>
                     </div>
 
-                    <div class="flex gap-4 pt-4">
-                        <button type="submit" class="flex-1 bg-lib-blue text-white py-5 rounded-3xl font-black hover:bg-lib-navy transition-all shadow-2xl shadow-lib-blue/30 text-lg">Apply Filters</button>
-                        @if(request()->hasAny(['categories', 'year']))
-                            <a href="{{ route('assets.all', request()->only('search')) }}" 
-                               class="flex-1 bg-red-500 hover:bg-red-600 text-white py-5 rounded-3xl font-black text-center transition-all shadow-2xl shadow-red-500/30 text-lg">
-                                Clear Filters
-                            </a>
+                    {{-- Results (server-rendered, paginated) — grid or list view --}}
+                    @if($currentView === 'grid')
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 stagger">
+                            @forelse($assets as $asset)
+                                @php
+                                    $thumb     = $asset->thumbnail_path ?: ($asset->type === 'photo' ? $asset->file_path : null);
+                                    $typeKey   = strtolower((string) $asset->type);
+                                    $typeLabel = $typeLabels[$typeKey] ?? ucfirst((string) $asset->type);
+                                    $thumbUrl  = $thumb ? asset('storage/' . $thumb) : $defaultThumb;
+                                @endphp
+                                <a href="{{ route('media.show', $asset) }}" class="group block">
+                                    <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 shadow-md group-hover:shadow-xl transition-shadow relative">
+                                        <img src="{{ $thumbUrl }}" alt="{{ $asset->title }}"
+                                             class="w-full h-full {{ $thumb ? 'object-cover' : 'object-contain p-6 bg-white' }} group-hover:scale-105 transition-transform duration-500"
+                                             loading="lazy"
+                                             onerror="this.onerror=null; this.src='{{ $defaultThumb }}'; this.classList.remove('object-cover'); this.classList.add('object-contain','p-6','bg-white');">
+                                    </div>
+                                    <div class="mt-3 px-1">
+                                        <h3 class="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-lib-sky transition-colors">{{ $asset->title }}</h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">{{ $typeLabel }}</p>
+                                    </div>
+                                </a>
+                            @empty
+                                <div class="col-span-full py-12 text-center text-slate-400 text-sm">
+                                    No items match your filters.
+                                </div>
+                            @endforelse
+                        </div>
+                    @else
+                        <div class="flex flex-col divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden stagger">
+                            @forelse($assets as $asset)
+                                @php
+                                    $thumb     = $asset->thumbnail_path ?: ($asset->type === 'photo' ? $asset->file_path : null);
+                                    $typeKey   = strtolower((string) $asset->type);
+                                    $typeLabel = $typeLabels[$typeKey] ?? ucfirst((string) $asset->type);
+                                    $thumbUrl  = $thumb ? asset('storage/' . $thumb) : $defaultThumb;
+                                @endphp
+                                <a href="{{ route('media.show', $asset) }}"
+                                   class="group flex items-center gap-4 p-3 hover:bg-slate-50 transition-colors">
+                                    <div class="w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
+                                        <img src="{{ $thumbUrl }}" alt="{{ $asset->title }}"
+                                             class="w-full h-full {{ $thumb ? 'object-cover' : 'object-contain p-1 bg-white' }}"
+                                             loading="lazy"
+                                             onerror="this.onerror=null; this.src='{{ $defaultThumb }}'; this.classList.remove('object-cover'); this.classList.add('object-contain','p-1','bg-white');">
+                                    </div>
+                                    <div class="flex-grow min-w-0">
+                                        <h3 class="text-sm font-bold text-slate-800 truncate group-hover:text-lib-sky transition-colors">{{ $asset->title }}</h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">{{ $typeLabel }} &middot; {{ $asset->created_at?->format('M j, Y') }}</p>
+                                    </div>
+                                    @if($asset->categories->isNotEmpty())
+                                        <span class="hidden sm:inline-block text-[10px] font-bold text-lib-sky bg-lib-light px-2 py-1 rounded-full whitespace-nowrap">
+                                            {{ $asset->categories->first()->name }}
+                                        </span>
+                                    @endif
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4 text-slate-300 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                </a>
+                            @empty
+                                <div class="py-12 text-center text-slate-400 text-sm">
+                                    No items match your filters.
+                                </div>
+                            @endforelse
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Pagination --}}
+                @if($assets->total() > 0)
+                    <div class="bg-white rounded-3xl px-6 py-4 shadow-sm border border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <p class="text-sm text-slate-500 font-medium">
+                            Showing
+                            <span class="font-bold">{{ $assets->firstItem() }}</span>
+                            &ndash;
+                            <span class="font-bold">{{ $assets->lastItem() }}</span>
+                            of
+                            <span class="font-bold">{{ $assets->total() }}</span>
+                            results
+                        </p>
+                        @if($assets->hasPages())
+                            <div class="flex items-center">
+                                {{ $assets->onEachSide(1)->links('vendor.pagination.library') }}
+                            </div>
                         @endif
                     </div>
-                </form>
-            </div>
+                @endif
+            </section>
         </div>
-    </template>
     </div>
 </div>
 @endsection

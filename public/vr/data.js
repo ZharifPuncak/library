@@ -481,7 +481,9 @@ var APP_DATA = {
           "yaw": 0.29609699041108506,
           "pitch": 0.31677687258821585,
           "title": "Library Archive",
-          "text": "Access our digital archive: <a href='https://www.example.com' target='_blank' style='color: #4da6ff; text-decoration: underline;'>Click Here</a>"
+          "text": (window.VR_CONFIG && window.VR_CONFIG.archiveUrl)
+            ? "Access our digital archive: <a href='" + window.VR_CONFIG.archiveUrl + "' target='_blank' rel='noopener noreferrer' style='color: #4da6ff; text-decoration: underline;'>Click Here</a>"
+            : "Digital archive link is not configured."
         },
         {
           "yaw": 2.580631391325448,

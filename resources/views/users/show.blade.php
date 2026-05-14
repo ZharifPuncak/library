@@ -8,7 +8,7 @@
     <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
         {{-- Back Button --}}
         @if(isset($isCollectionContext) && $isCollectionContext)
-            <a href="{{ route('collections.show', $collectionName) }}" 
+            <a href="{{ route('collections.show', $collectionName) }}"
                 class="inline-flex items-center gap-3 text-slate-500 hover:text-lib-navy font-black transition-all group active:scale-95">
                 <div class="bg-white p-2.5 rounded-xl shadow-sm group-hover:shadow-md transition-all border border-slate-100">
                     <svg class="h-4 w-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -19,12 +19,12 @@
             </a>
         @else
             @php
-                $backRoute = route('assets.all');
-                if (strtolower($asset->type) === 'photo') $backRoute = route('assets.photos');
-                if (strtolower($asset->type) === 'video') $backRoute = route('assets.videos');
-                if (strtolower($asset->type) === 'ebook') $backRoute = route('assets.ebooks');
+                $type = strtolower($asset->type);
+                $backRoute = in_array($type, ['photo', 'video', 'ebook'], true)
+                    ? route('media.index', ['type' => $type])
+                    : route('media.index');
             @endphp
-            <a href="{{ $backRoute }}" 
+            <a href="{{ $backRoute }}"
                 class="inline-flex items-center gap-3 text-slate-500 hover:text-lib-navy font-black transition-all group active:scale-95">
                 <div class="bg-white p-2.5 rounded-xl shadow-sm group-hover:shadow-md transition-all border border-slate-100">
                     <svg class="h-4 w-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,7 +55,7 @@
 
                 {{-- MAIN IMAGE WRAPPER --}}
                 <div id="fullscreenContainer" class="relative">
-                    
+
                     <style>
                         /* Fullscreen Mode Styles */
                         #fullscreenContainer:fullscreen {
@@ -107,20 +107,20 @@
 
                     {{-- MAIN MEDIA CONTAINER --}}
                     <div class="media-inner-box bg-slate-50 backdrop-blur-sm rounded-[2rem] p-4 flex items-center justify-center min-h-[500px] relative border border-slate-200 shadow-inner transition-all duration-500 overflow-hidden">
-                        
+
                         {{-- Navigation Arrows --}}
                         <button onclick="prevImage()" class="nav-arrow absolute top-1/2 left-6 -translate-y-1/2 z-50 bg-lib-navy/80 hover:bg-lib-navy text-white border border-lib-navy rounded-2xl w-14 h-14 flex items-center justify-center transition-all shadow-2xl backdrop-blur-xl group/arrow">
                             <svg class="h-6 w-6 group-hover/arrow:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
-    
+
                         <button onclick="nextImage()" class="nav-arrow absolute top-1/2 right-6 -translate-y-1/2 z-50 bg-lib-navy/80 hover:bg-lib-navy text-white border border-lib-navy rounded-2xl w-14 h-14 flex items-center justify-center transition-all shadow-2xl backdrop-blur-xl group/arrow">
                             <svg class="h-6 w-6 group-hover/arrow:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7" />
                             </svg>
                         </button>
-                        
+
                         {{-- Photo Element --}}
                         <img id="mainImage"
                              src="{{ asset('storage/' . $asset->file_path) }}"
@@ -145,7 +145,7 @@
                         {{-- E-book (PDF) Element --}}
                         <div id="mainEbook" class="w-full {{ in_array(strtolower($asset->type), ['ebook']) ? 'block' : 'hidden' }}">
                             <div class="relative w-full h-[700px]">
-                                <iframe id="ebookFrame" 
+                                <iframe id="ebookFrame"
                                         src="{{ in_array(strtolower($asset->type), ['ebook']) ? asset('storage/' . $asset->file_path) . '#toolbar=1&navpanes=1&scrollbar=1&view=FitH' : '' }}"
                                         class="w-full h-full border-none rounded-lg shadow-inner"
                                         allow="fullscreen">
@@ -153,8 +153,8 @@
                                 </iframe>
                             </div>
                             <div class="flex gap-3 justify-center mt-4">
-                                <a id="ebookLink" href="{{ in_array(strtolower($asset->type), ['ebook']) ? asset('storage/' . $asset->file_path) : '' }}" 
-                                   target="_blank" 
+                                <a id="ebookLink" href="{{ in_array(strtolower($asset->type), ['ebook']) ? asset('storage/' . $asset->file_path) : '' }}"
+                                   target="_blank"
                                    download
                                    class="inline-flex items-center gap-2 bg-lib-navy/10 hover:bg-lib-navy text-lib-navy hover:text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-lib-navy/20 shadow-xl backdrop-blur-md">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -162,7 +162,7 @@
                                     </svg>
                                     Download PDF
                                 </a>
-                                <a id="ebookOpenLink" href="{{ in_array(strtolower($asset->type), ['ebook']) ? asset('storage/' . $asset->file_path) : '' }}" 
+                                <a id="ebookOpenLink" href="{{ in_array(strtolower($asset->type), ['ebook']) ? asset('storage/' . $asset->file_path) : '' }}"
                                    target="_blank"
                                    class="inline-flex items-center gap-2 bg-lib-sky/10 hover:bg-lib-sky text-lib-sky hover:text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border border-lib-sky/20 shadow-xl backdrop-blur-md">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -207,7 +207,7 @@
                 {{-- METADATA SECTION --}}
                 <div class="mt-6 pt-6 border-t border-slate-200 relative z-10">
                     <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Asset Details</h4>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {{-- Asset Type --}}
                         <div class="flex items-center gap-3">
@@ -319,7 +319,7 @@
                 {{-- Collection Access --}}
                 @if(!isset($isCollectionContext) && isset($collectionName))
                 <div class="mt-8 border-t border-slate-200 pt-8">
-                    <a href="{{ route('collections.show', $collectionName) }}" 
+                    <a href="{{ route('collections.show', $collectionName) }}"
                        class="flex items-center justify-center gap-3 w-full bg-lib-navy hover:bg-lib-sky text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-lib-navy/10 transition-all hover:-translate-y-1 active:scale-95 group">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -342,7 +342,7 @@
 
         {{-- RIGHT: RELATED ASSETS SIDEBAR --}}
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-2xl shadow-slate-200/50 sticky top-24">
+            <div class="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-2xl shadow-slate-200/50 sticky top-36 md:top-40">
                 <div class="flex items-center justify-between mb-8">
                     <h3 class="text-xl font-black text-lib-navy flex items-center gap-3">
                         <div class="bg-lib-light p-2 rounded-xl">
@@ -369,7 +369,7 @@
                             {
                                 id: {{ $asset->id }},
                                 title: @json($asset->title),
-                                type: @json(strtolower($asset->type)), 
+                                type: @json(strtolower($asset->type)),
                                 date: "{{ \Carbon\Carbon::parse($asset->date ?? $asset->created_at)->format('d F Y') }}",
                                 src: "{{ asset('storage/' . $asset->file_path) }}",
                                 thumbnail: "{{ $asset->thumbnail_path ? asset('storage/' . $asset->thumbnail_path) : '' }}"
@@ -401,7 +401,7 @@
 
                             // Trigger transition
                             mainContainer.classList.add('opacity-0', 'scale-95');
-                            
+
                             setTimeout(() => {
                                 // Reset all
                                 img.classList.add('hidden');
@@ -413,7 +413,7 @@
                                 if (['video'].includes(item.type)) {
                                     video.classList.remove('hidden');
                                     video.src = item.src;
-                                    video.load(); 
+                                    video.load();
                                 } else if (['ebook'].includes(item.type)) {
                                     ebook.classList.remove('hidden');
                                     ebookFrame.src = item.src + '#toolbar=1&navpanes=1&scrollbar=1&view=FitH';
@@ -428,7 +428,7 @@
 
                                 const titleEl = document.getElementById('mainTitle');
                                 const dateEl = document.getElementById('mainDate');
-                                
+
                                 titleEl.innerText = item.title;
                                 dateEl.innerText = item.date;
 
@@ -440,7 +440,7 @@
                                 dateEl.classList.add('slide-up');
 
                                 mainContainer.classList.remove('opacity-0', 'scale-95');
-                                
+
                                 // Update Active Indicator
                                 document.querySelectorAll('.gallery-item').forEach((box, i) => {
                                     if(i === currentIndex) {

@@ -58,7 +58,7 @@
                 
                 <!-- Media Preview -->
                 <div class="relative h-48 overflow-hidden bg-slate-100">
-                    <a href="{{ route('assets.show', $asset->id) }}" class="block h-full w-full">
+                    <a href="{{ route('media.show', $asset) }}" class="block h-full w-full">
                         @php
                             $type = strtolower($asset->type);
                             $isThumbnail = !empty($asset->thumbnail_path);
@@ -106,7 +106,7 @@
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[9px] font-black text-lib-sky uppercase tracking-[0.2em]">{{ $asset->categories->first()->name ?? 'Asset' }}</span>
                         </div>
-                        <a href="{{ route('assets.show', $asset->id) }}" class="block">
+                        <a href="{{ route('media.show', $asset) }}" class="block">
                             <h3 class="text-base font-bold text-slate-800 leading-tight mb-2 group-hover:text-lib-sky transition-colors line-clamp-2">
                                 {{ $asset->title }}
                             </h3>

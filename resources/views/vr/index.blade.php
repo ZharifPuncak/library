@@ -113,6 +113,9 @@
 
   <script>
     window.VR_BASE_URL = @json(asset('vr'));
+    window.VR_CONFIG = @json([
+      'archiveUrl' => config('vr.archive_url'),
+    ]);
   </script>
   <script src="{{ asset('vr/vendor/screenfull.min.js') }}"></script>
   <script src="{{ asset('vr/vendor/bowser.min.js') }}"></script>

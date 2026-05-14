@@ -13,8 +13,8 @@ class Category extends Model
         'name',
     ];
 
-    public function assets()
+    public function media()
     {
-        return $this->belongsToMany(Asset::class, 'asset_category', 'category_id', 'asset_id');
+        return $this->belongsToMany(Media::class, 'media_category', 'category_id', 'media_id');
     }
 }

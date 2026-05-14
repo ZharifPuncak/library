@@ -57,12 +57,9 @@ class User extends Authenticatable
      * This establishes the One-to-Many relationship (User has many Assets).
      * Used in Admin View to track asset uploads.
      */
-    public function assetsUploaded(): HasMany
+    public function mediaUploaded(): HasMany
     {
-        // Parameter 1: Related model (Asset)
-        // Parameter 2: Foreign Key on the Asset model ('uploadedByUserID')
-        // Parameter 3: Local Key on this model ('id')
-        return $this->hasMany(Asset::class, 'uploadedByUserID', 'id');
+        return $this->hasMany(Media::class, 'uploadedByUserID', 'id');
     }
 
     // ----------------------------------------------------

@@ -13,8 +13,8 @@ class Tag extends Model
         'name',
     ];
 
-    public function assets()
+    public function media()
     {
-        return $this->belongsToMany(Asset::class, 'asset_tag');
+        return $this->belongsToMany(Media::class, 'media_tag');
     }
 }

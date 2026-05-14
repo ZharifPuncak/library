@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Asset;
-use App\Models\AssetDetail;
+use App\Models\Media;
+use App\Models\MediaDetail;
 use App\Models\Category;
 use App\Models\Tag;
 use Illuminate\Http\Request;
@@ -16,17 +16,17 @@ class UserCollectionController extends Controller
     public function index()
     {
         // Get unique collection names from asset_details
-        $collectionNames = AssetDetail::where('key', 'collection')
+        $collectionNames = MediaDetail::where('key', 'collection')
             ->distinct()
             ->pluck('value');
 
         // Fetch one representative asset for each collection for the thumbnail
         $collections = $collectionNames->map(function ($name) {
-            $representative = Asset::whereHas('details', function ($q) use ($name) {
+            $representative = Media::whereHas('details', function ($q) use ($name) {
                 $q->where('key', 'collection')->where('value', $name);
             })->first();
 
-            $count = Asset::whereHas('details', function ($q) use ($name) {
+            $count = Media::whereHas('details', function ($q) use ($name) {
                 $q->where('key', 'collection')->where('value', $name);
             })->count();
 
@@ -47,7 +47,7 @@ class UserCollectionController extends Controller
      */
     public function show($name)
     {
-        $assets = Asset::whereHas('details', function ($q) use ($name) {
+        $assets = Media::whereHas('details', function ($q) use ($name) {
             $q->where('key', 'collection')->where('value', $name);
         })
         ->with(['categories', 'tags'])
@@ -55,16 +55,16 @@ class UserCollectionController extends Controller
         ->paginate(12);
 
         $counts = [
-            'total' => Asset::whereHas('details', function($q) use ($name) {
+            'total' => Media::whereHas('details', function($q) use ($name) {
                 $q->where('key', 'collection')->where('value', $name);
             })->count(),
-            'photo' => Asset::whereHas('details', function($q) use ($name) {
+            'photo' => Media::whereHas('details', function($q) use ($name) {
                 $q->where('key', 'collection')->where('value', $name);
             })->where('type', 'photo')->count(),
-            'video' => Asset::whereHas('details', function($q) use ($name) {
+            'video' => Media::whereHas('details', function($q) use ($name) {
                 $q->where('key', 'collection')->where('value', $name);
             })->where('type', 'video')->count(),
-            'ebook' => Asset::whereHas('details', function($q) use ($name) {
+            'ebook' => Media::whereHas('details', function($q) use ($name) {
                 $q->where('key', 'collection')->where('value', $name);
             })->where('type', 'ebook')->count(),
         ];
@@ -77,13 +77,14 @@ class UserCollectionController extends Controller
     /**
      * Display a specific asset within a collection context.
      */
-    public function showAsset($name, Asset $asset)
+    public function showAsset($name, Media $media)
     {
+        $asset = $media;
         $asset->load(['details', 'categories', 'tags']);
         $asset->incrementViews();
 
         // Fetch all assets in this collection for the sidebar
-        $relatedAssets = Asset::whereHas('details', function ($q) use ($name) {
+        $relatedAssets = Media::whereHas('details', function ($q) use ($name) {
             $q->where('key', 'collection')->where('value', $name);
         })
         ->where('id', '!=', $asset->id)

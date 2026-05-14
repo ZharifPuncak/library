@@ -14,7 +14,7 @@
     <!-- Interface Controls -->
     <div class="flex flex-col md:flex-row gap-4 mb-12">
         <div class="flex-grow relative group">
-            <form action="{{ route('assets.ebooks') }}" method="GET" class="relative">
+            <form action="{{ route('media.ebooks') }}" method="GET" class="relative">
                 <input type="text" name="search" placeholder="Search digital manuscripts..." value="{{ request('search') }}"
                        class="w-full pl-14 {{ request('search') ? 'pr-52' : 'pr-32' }} py-5 bg-white border-none rounded-3xl focus:ring-4 focus:ring-lib-sky/20 transition-all font-bold text-lib-navy shadow-sm group-hover:shadow-md">
                 
@@ -25,7 +25,7 @@
                 </div>
 
                 @if(request('search'))
-                    <a href="{{ route('assets.ebooks', request()->except('search')) }}" 
+                    <a href="{{ route('media.ebooks', request()->except('search')) }}" 
                        class="absolute right-36 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600 font-bold text-xs transition-colors uppercase tracking-wide">
                         CLEAR
                     </a>
@@ -59,7 +59,7 @@
             <div class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col font-fredoka">
                 {{-- Thumbnail --}}
                 <div class="relative h-48 overflow-hidden bg-slate-100">
-                    <a href="{{ route('assets.show', $asset->id) }}" class="block h-full w-full">
+                    <a href="{{ route('media.show', $asset) }}" class="block h-full w-full">
                         @if($asset->thumbnail_path)
                             <img src="{{ asset('storage/' . $asset->thumbnail_path) }}" 
                                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
@@ -92,7 +92,7 @@
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[9px] font-black text-lib-sky uppercase tracking-[0.2em]">{{ $asset->categories->first()->name ?? 'Asset' }}</span>
                         </div>
-                        <a href="{{ route('assets.show', $asset->id) }}" class="block">
+                        <a href="{{ route('media.show', $asset) }}" class="block">
                             <h3 class="text-base font-bold text-slate-800 leading-tight mb-2 group-hover:text-lib-sky transition-colors line-clamp-2">{{ $asset->title }}</h3>
                         </a>
 
@@ -127,7 +127,7 @@
                 <div class="text-9xl mb-8 opacity-10">📚</div>
                 <h3 class="text-3xl font-black text-slate-300 mb-2">Shelf is empty</h3>
                 <p class="text-slate-400 font-medium">Try searching for a different title or author</p>
-                <a href="{{ route('assets.ebooks') }}" class="inline-block mt-8 px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20">All e-books</a>
+                <a href="{{ route('media.ebooks') }}" class="inline-block mt-8 px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20">All e-books</a>
             </div>
         @endforelse
     </div>
@@ -163,7 +163,7 @@
                     <p class="text-slate-400 font-medium mt-1">Filter e-books by category and year</p>
                 </div>
 
-                <form action="{{ route('assets.ebooks') }}" method="GET" class="space-y-10">
+                <form action="{{ route('media.ebooks') }}" method="GET" class="space-y-10">
                     @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
                     
                     <div>
@@ -191,7 +191,7 @@
                     <div class="flex gap-4 pt-4">
                         <button type="submit" class="flex-1 bg-lib-blue text-white py-5 rounded-3xl font-black hover:bg-lib-navy transition-all shadow-2xl shadow-lib-blue/30 text-lg">Update Results</button>
                         @if(request()->hasAny(['categories', 'year']))
-                            <a href="{{ route('assets.ebooks', request()->only('search')) }}" 
+                            <a href="{{ route('media.ebooks', request()->only('search')) }}" 
                                class="flex items-center justify-center flex-1 bg-red-500 hover:bg-red-600 text-white py-5 rounded-3xl font-black text-center transition-all shadow-2xl shadow-red-500/30 text-lg">
                                 Clear Filters
                             </a>

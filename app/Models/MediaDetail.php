@@ -5,18 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class AssetDetail extends Model
+class MediaDetail extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'asset_id',
+        'media_id',
         'key',
         'value',
     ];
 
-    public function asset()
+    public function media()
     {
-        return $this->belongsTo(Asset::class);
+        return $this->belongsTo(Media::class);
     }
 }

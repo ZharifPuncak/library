@@ -4,16 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
-class Asset extends Model
+class Media extends Model
 {
     use HasFactory;
 
-    protected $table = 'assets';
+    protected $table = 'media';
     protected $primaryKey = 'id';
 
     protected $fillable = [
-        'type',         // Photo, Video, Ebook, Slideshow, Document, etc
+        'uuid',
+        'type',
         'title',
         'file_path',
         'file_url',
@@ -25,58 +27,54 @@ class Asset extends Model
         'date' => 'datetime',
     ];
 
-    // ================================
-    // DETAILS (EBOOK / VIDEO / ETC)
-    // ================================
+    /**
+     * Route model binding uses the UUID, so URLs read /media/{uuid}.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $media) {
+            if (empty($media->uuid)) {
+                $media->uuid = (string) Str::uuid();
+            }
+        });
+    }
+
     public function details()
     {
-        return $this->hasMany(AssetDetail::class, 'asset_id');
+        return $this->hasMany(MediaDetail::class, 'media_id');
     }
 
-    // ================================
-    // CATEGORIES
-    // ================================
     public function categories()
     {
-        return $this->belongsToMany(Category::class, 'asset_category', 'asset_id', 'category_id');
+        return $this->belongsToMany(Category::class, 'media_category', 'media_id', 'category_id');
     }
 
-    // ================================
-    // TAGS
-    // ================================
     public function tags()
     {
-        return $this->belongsToMany(Tag::class, 'asset_tag', 'asset_id', 'tag_id');
+        return $this->belongsToMany(Tag::class, 'media_tag', 'media_id', 'tag_id');
     }
 
-    // ================================
-    // Uploader (Admin)
-    // ================================
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
-    /**
-     * Get a specific detail value by key.
-     */
     public function getDetail($key, $default = null)
     {
         $detail = $this->details->where('key', $key)->first();
         return $detail ? $detail->value : $default;
     }
 
-    /**
-     * Get the collection name if it exists.
-     */
     public function getCollectionAttribute()
     {
         return $this->getDetail('collection');
     }
 
-    /**
-     * Increment the view count for this asset using asset_details.
-     */
     public function incrementViews()
     {
         $viewDetail = $this->details()->where('key', 'views')->first();

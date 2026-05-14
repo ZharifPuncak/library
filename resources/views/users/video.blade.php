@@ -13,7 +13,7 @@
     <!-- Toolbar -->
     <div class="flex flex-col md:flex-row gap-4 mb-12">
         <div class="flex-grow relative group">
-            <form action="{{ route('assets.videos') }}" method="GET" class="relative">
+            <form action="{{ route('media.videos') }}" method="GET" class="relative">
                 <input type="text" name="search" placeholder="Search archive..." value="{{ request('search') }}"
                        class="w-full pl-14 {{ request('search') ? 'pr-52' : 'pr-32' }} py-5 bg-white border-none rounded-3xl focus:ring-4 focus:ring-lib-sky/20 transition-all font-bold text-lib-navy shadow-sm group-hover:shadow-md">
                 
@@ -24,7 +24,7 @@
                 </div>
 
                 @if(request('search'))
-                    <a href="{{ route('assets.videos', request()->except('search')) }}" 
+                    <a href="{{ route('media.videos', request()->except('search')) }}" 
                        class="absolute right-36 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600 font-bold text-xs transition-colors uppercase tracking-wide">
                         CLEAR
                     </a>
@@ -60,7 +60,7 @@
                  onmouseleave="this.querySelector('video')?.load()">
                 {{-- Thumbnail --}}
                 <div class="relative h-48 overflow-hidden bg-slate-900">
-                    <a href="{{ route('assets.show', $asset->id) }}" class="block h-full w-full">
+                    <a href="{{ route('media.show', $asset) }}" class="block h-full w-full">
                         <video src="{{ asset('storage/' . $asset->file_path) }}" 
                                @if($asset->thumbnail_path) poster="{{ asset('storage/' . $asset->thumbnail_path) }}" @endif
                                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
@@ -86,7 +86,7 @@
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[9px] font-black text-lib-sky uppercase tracking-[0.2em]">{{ $asset->categories->first()->name ?? 'Asset' }}</span>
                         </div>
-                        <a href="{{ route('assets.show', $asset->id) }}" class="block">
+                        <a href="{{ route('media.show', $asset) }}" class="block">
                             <h3 class="text-base font-bold text-slate-800 leading-tight mb-2 group-hover:text-lib-sky transition-colors line-clamp-2">{{ $asset->title }}</h3>
                         </a>
 
@@ -121,7 +121,7 @@
                 <div class="text-9xl mb-8 opacity-20 filter grayscale">📹</div>
                 <h3 class="text-3xl font-black text-lib-navy mb-3">No videos found</h3>
                 <p class="text-slate-500 font-medium text-lg">Adjust your refine options to find hidden treasures</p>
-                <a href="{{ route('assets.videos') }}" class="inline-block mt-10 px-12 py-5 bg-lib-blue text-white rounded-3xl font-black hover:bg-lib-navy transition-all shadow-2xl shadow-lib-blue/20">All Videos</a>
+                <a href="{{ route('media.videos') }}" class="inline-block mt-10 px-12 py-5 bg-lib-blue text-white rounded-3xl font-black hover:bg-lib-navy transition-all shadow-2xl shadow-lib-blue/20">All Videos</a>
             </div>
         @endforelse
     </div>
@@ -157,7 +157,7 @@
                     <p class="text-slate-400 font-medium mt-1">Filter videos by category and year</p>
                 </div>
 
-                <form action="{{ route('assets.videos') }}" method="GET" class="space-y-10">
+                <form action="{{ route('media.videos') }}" method="GET" class="space-y-10">
                     @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
                     
                     <div>
@@ -185,7 +185,7 @@
                     <div class="flex gap-4 pt-4">
                         <button type="submit" class="flex-1 bg-lib-blue text-white py-5 rounded-3xl font-black hover:bg-lib-navy transition-all shadow-2xl shadow-lib-blue/30 text-lg">Update Results</button>
                         @if(request()->hasAny(['categories', 'year']))
-                            <a href="{{ route('assets.videos', request()->only('search')) }}" 
+                            <a href="{{ route('media.videos', request()->only('search')) }}" 
                                class="flex-1 bg-red-500 hover:bg-red-600 text-white py-5 rounded-3xl font-black text-center transition-all shadow-2xl shadow-red-500/30 text-lg">
                                 Clear Filters
                             </a>

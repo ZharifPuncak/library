@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - Library Portal</title>
-    {{-- Google Fonts - Fredoka --}}
+    <title>Login - E-Library</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    {{-- Tailwind CSS --}}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -16,146 +16,92 @@
                 extend: {
                     colors: {
                         'lib-navy': '#003865',
-                        'lib-sky': '#0ea5e9',
-                        'lib-light': '#f0f9ff',
+                        'lib-blue': '#1d6a99',
+                        'lib-sky':  '#0ea5e9',
                     },
-                    fontFamily: {
-                        'fredoka': ['Fredoka', 'sans-serif'],
-                    }
+                    fontFamily: { 'sans': ['Inter', 'system-ui', 'sans-serif'] }
                 }
             }
         }
     </script>
+
     <style>
-        body { font-family: 'Fredoka', sans-serif; }
+        body { font-family: 'Inter', system-ui, sans-serif; }
     </style>
-    
-    {{-- SweetAlert2 & Validation --}}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        function validateAuthForm(event) {
-            const inputs = event.target.querySelectorAll('input[required]');
-            let isValid = true;
-            inputs.forEach(input => {
-                if (!input.value.trim()) isValid = false;
-            });
-            
-            if (!isValid) {
-                event.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Missing Information',
-                    text: 'Please fill out all fields to proceed.',
-                    confirmButtonColor: '#003865',
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        popup: 'rounded-[2rem] font-fredoka',
-                        confirmButton: 'rounded-xl px-8 py-3 font-bold'
-                    }
-                });
-            }
-        }
-    </script>
 </head>
-<body class="bg-[#f8fafc] min-h-screen flex items-center justify-center p-6 antialiased">
-    <div class="max-w-md w-full relative">
-        {{-- Decorative background blobs --}}
-        <div class="absolute -top-20 -left-20 w-64 h-64 bg-lib-sky/5 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-lib-navy/5 rounded-full blur-3xl animate-pulse"></div>
 
-        <div class="relative bg-white rounded-[3.5rem] p-12 shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-            <div class="text-center mb-10">
-                <div class="inline-flex items-center justify-center mb-6">
-                    <img src="{{ asset('images/library.png') }}" alt="Logo" class="w-48 h-auto object-contain">
-                </div>
-                <h1 class="text-4xl font-black text-lib-navy tracking-tight mb-3">Welcome <span class="text-lib-sky">Back.</span></h1>
-                <p class="text-slate-400 font-medium italic">Please enter your details to login.</p>
+<body class="min-h-screen flex items-center justify-center p-6 bg-lib-blue">
+
+    <div class="w-full max-w-sm">
+
+        {{-- Logo above card --}}
+        <div class="flex justify-center -mb-12 relative z-10">
+            <div class="bg-white rounded-full p-3 shadow-xl">
+                <img src="{{ asset('images/logo.png') }}" alt="Puncak Niaga"
+                     class="h-20 w-20 object-contain"
+                     onerror="this.style.display='none'">
             </div>
+        </div>
 
-            {{-- Form --}}
-            {{-- Form --}}
-            <form method="POST" action="{{ route('login') }}" class="space-y-6" novalidate onsubmit="validateAuthForm(event)">
+        {{-- Card --}}
+        <div class="bg-white rounded-2xl shadow-2xl pt-16 pb-8 px-8">
+
+            <h1 class="text-center text-xl font-semibold text-slate-800 mb-6">E-Library Login</h1>
+
+            <form method="POST" action="{{ route('login') }}" class="space-y-4">
                 @csrf
-                
+
                 {{-- Username --}}
-                <div class="space-y-2">
-                    <label for="username" class="text-[10px] font-black text-lib-navy uppercase tracking-widest pl-2">Username</label>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none transition-colors group-focus-within:text-lib-sky text-slate-300">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                        <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus
-                            class="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-lib-navy focus:bg-white transition-all outline-none text-lib-navy font-medium @error('username') border-red-200 bg-red-50 @enderror"
-                            placeholder="Your username">
-                    </div>
+                <div>
+                    <label for="username" class="block text-sm font-medium text-slate-700 mb-1.5">Username</label>
+                    <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus
+                           autocomplete="username"
+                           class="w-full px-3 py-2.5 rounded-md border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-lib-blue focus:border-lib-blue transition-colors @error('username') border-red-400 @enderror">
                     @error('username')
-                        <p class="text-red-500 text-[10px] font-bold pl-2 uppercase tracking-wider">{{ $message }}</p>
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 {{-- Password --}}
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between px-2">
-                        <label for="password" class="text-[10px] font-black text-lib-navy uppercase tracking-widest">Password</label>
-                        @if (Route::has('password.request'))
-                            <a href="{{ route('password.request') }}" class="text-[9px] font-black text-slate-400 hover:text-lib-sky uppercase tracking-widest transition-colors">Forgot?</a>
-                        @endif
-                    </div>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none transition-colors group-focus-within:text-lib-sky text-slate-300">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <input id="password" type="password" name="password" required
-                            class="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-lib-navy focus:bg-white transition-all outline-none text-lib-navy font-medium @error('password') border-red-200 bg-red-50 @enderror"
-                            placeholder="minimum 8 characters">
+                <div x-data="{ show: false }">
+                    <label for="password" class="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                    <div class="relative">
+                        <input id="password" :type="show ? 'text' : 'password'" name="password" required
+                               autocomplete="current-password"
+                               class="w-full pr-10 px-3 py-2.5 rounded-md border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-lib-blue focus:border-lib-blue transition-colors @error('password') border-red-400 @enderror">
+                        <button type="button" @click="show = !show"
+                                class="absolute inset-y-0 right-0 px-3 text-slate-400 hover:text-lib-blue transition-colors"
+                                :aria-label="show ? 'Hide password' : 'Show password'">
+                            <svg x-show="!show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <svg x-show="show" x-cloak xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
+                        </button>
                     </div>
                     @error('password')
-                        <p class="text-red-500 text-[10px] font-bold pl-2 uppercase tracking-wider">{{ $message }}</p>
+                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                {{-- Remember Me --}}
-                <div class="flex items-center px-2">
-                    <label class="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}
-                            class="w-4 h-4 rounded border-slate-200 text-lib-navy focus:ring-lib-navy transition-all">
-                        <span class="text-[10px] font-bold text-slate-400 group-hover:text-lib-navy uppercase tracking-widest transition-colors">Remember my access</span>
-                    </label>
-                </div>
-
-                {{-- Login Button --}}
-                <button type="submit" 
-                    class="w-full bg-lib-navy hover:bg-lib-sky text-white py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] shadow-xl shadow-lib-navy/20 transition-all hover:-translate-y-1 active:scale-95">
-                    Login Now
+                {{-- Login button --}}
+                <button type="submit"
+                        class="w-full bg-lib-blue hover:bg-lib-navy text-white font-semibold py-2.5 rounded-md transition-colors mt-2">
+                    Login
                 </button>
-            </form>
 
-            {{-- Footer Support --}}
-            <div class="mt-12 pt-10 border-t border-slate-50 flex flex-col items-center gap-6">
-                <div class="text-center">
-                    <p class="text-[11px] font-bold text-slate-400 mb-4 uppercase tracking-wider">New to our portal?</p>
-                    <a href="{{ route('admin.register') }}" 
-                        class="inline-flex items-center justify-center px-8 py-3 rounded-full border-2 border-slate-100 text-lib-navy font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 hover:border-lib-navy/20 transition-all transform active:scale-95 leading-none">
-                        Create Account
+                {{-- Forgot --}}
+                @if (Route::has('password.request'))
+                    <a href="{{ route('password.request') }}"
+                       class="block w-full text-center border border-slate-300 hover:border-lib-blue hover:text-lib-blue text-slate-600 font-medium py-2 rounded-md transition-colors text-sm">
+                        Forgot Password
                     </a>
-                </div>
-                
-                <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-[10px] font-black text-slate-300 hover:text-lib-navy uppercase tracking-[0.2em] transition-all group">
-                    <svg class="h-4 w-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Back to Home
-                </a>
-            </div>
+                @endif
+            </form>
         </div>
-        
-        <p class="text-center mt-10 text-[10px] font-black text-slate-300 uppercase tracking-widest">
-            &copy; {{ date('Y') }} Library Portal System
+
+        <p class="text-center text-white/70 text-xs mt-6">
+            &copy; {{ date('Y') }} Puncak Niaga Library Portal
         </p>
     </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>
