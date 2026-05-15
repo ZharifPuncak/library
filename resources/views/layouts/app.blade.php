@@ -114,31 +114,72 @@
 
     <!-- Page Nav Pills: Media / Users (admin only, sticky below header — hidden on home) -->
     @auth
-        @if(Auth::user()->isAdmin() && !request()->routeIs('home') && !request()->routeIs('media.show'))
+        @if(Auth::user()->isAdmin() && !request()->routeIs('home') && !request()->routeIs('media.show') && !request()->routeIs('collections.*'))
             @php
-                $mediaActive     = request()->routeIs('media.*') || request()->routeIs('collections.*');
-                $usersActive     = request()->routeIs('users.*');
-                $slideshowActive = request()->routeIs('slideshow.*');
+                $mediaActive      = request()->routeIs('media.*') || request()->routeIs('collections.*');
+                $usersActive      = request()->routeIs('users.*');
+                $slideshowActive  = request()->routeIs('slideshow.*');
+                $categoriesActive = request()->routeIs('categories.*');
+                $tagsActive       = request()->routeIs('tags.*');
             @endphp
+            @php
+                $navLinks = [
+                    ['label' => 'Media',      'route' => route('media.index'),      'active' => $mediaActive,
+                     'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>'],
+                    ['label' => 'Users',      'route' => route('users.index'),      'active' => $usersActive,
+                     'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>'],
+                    ['label' => 'Slideshow',  'route' => route('slideshow.index'),  'active' => $slideshowActive,
+                     'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>'],
+                    ['label' => 'Categories', 'route' => route('categories.index'), 'active' => $categoriesActive,
+                     'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>'],
+                    ['label' => 'Tags',       'route' => route('tags.index'),       'active' => $tagsActive,
+                     'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>'],
+                ];
+                $activeNav = collect($navLinks)->firstWhere('active', true);
+            @endphp
+
             <div class="sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
                 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav class="flex justify-start items-center gap-2 h-14">
-                        <a href="{{ route('media.index') }}"
-                           class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $mediaActive ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            Media
-                        </a>
-                        <a href="{{ route('users.index') }}"
-                           class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $usersActive ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                            Users
-                        </a>
-                        <a href="{{ route('slideshow.index') }}"
-                           class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $slideshowActive ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                            Slideshow
-                        </a>
+                    {{-- Desktop: full pill row --}}
+                    <nav class="hidden md:flex justify-start items-center gap-2 h-14">
+                        @foreach($navLinks as $link)
+                            <a href="{{ $link['route'] }}"
+                               class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $link['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
+                                {!! $link['icon'] !!}
+                                {{ $link['label'] }}
+                            </a>
+                        @endforeach
                     </nav>
+
+                    {{-- Mobile: right-aligned Actions dropdown --}}
+                    <div class="md:hidden flex justify-end items-center h-14 relative"
+                         x-data="{ actionsOpen: false }"
+                         @click.outside="actionsOpen = false"
+                         @keydown.escape.window="actionsOpen = false">
+                        <button type="button" @click="actionsOpen = !actionsOpen"
+                                class="inline-flex items-center gap-1.5 text-sm font-bold text-lib-navy hover:text-lib-sky transition-colors">
+                            <span>{{ $activeNav['label'] ?? 'Actions' }}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                 class="h-4 w-4 transition-transform"
+                                 :class="actionsOpen ? 'rotate-180' : ''">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <div x-show="actionsOpen" x-cloak
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
+                            @foreach($navLinks as $link)
+                                <a href="{{ $link['route'] }}"
+                                   class="flex items-center gap-3 px-4 py-3 text-sm font-semibold border-b border-slate-100 last:border-b-0 transition-colors {{ $link['active'] ? 'bg-lib-light text-lib-navy' : 'text-slate-600 hover:bg-slate-50 hover:text-lib-navy' }}">
+                                    {!! $link['icon'] !!}
+                                    {{ $link['label'] }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
             </div>
         @endif

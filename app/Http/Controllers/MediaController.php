@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Collection;
 use App\Models\Media;
 use App\Models\Category;
 use App\Models\Tag;
@@ -31,9 +32,55 @@ class MediaController extends Controller
     {
         $query = Media::with(['details', 'categories', 'tags']);
 
-        // Admins see every status; regular users only see published items.
-        if (!auth()->user()?->isAdmin()) {
-            $query->where('status', 'published');
+        // Status filter — non-admins are pinned to published; admins can switch via ?status.
+        $isAdmin       = (bool) (auth()->user()?->isAdmin());
+        $activeStatus  = $isAdmin
+            ? strtolower((string) $request->input('status', 'all'))
+            : 'published';
+        if (!in_array($activeStatus, ['all', 'draft', 'published', 'archived'], true)) {
+            $activeStatus = 'all';
+        }
+        if ($activeStatus !== 'all') {
+            $query->where('status', $activeStatus);
+        }
+
+        // Per-status counts for the admin tab strip (respects other filters EXCEPT status).
+        $statusCounts = null;
+        if ($isAdmin) {
+            $countBase = (clone $query)->getQuery(); // base before paginate
+            // Rebuild without status constraint via a fresh query that mirrors other filters.
+            $statusCounts = [
+                'all'       => 0, 'draft' => 0, 'published' => 0, 'archived' => 0,
+            ];
+            $countsQuery = Media::query();
+            // Apply same non-status filters so counts reflect the current view.
+            if ($search = $request->input('search')) {
+                $countsQuery->where(function (Builder $q) use ($search) {
+                    $q->where('title', 'like', "%$search%")
+                      ->orWhere('file_path', 'like', "%$search%")
+                      ->orWhereHas('details', fn($m) => $m->where('value', 'like', "%$search%"))
+                      ->orWhereHas('tags',    fn($t) => $t->where('name',  'like', "%$search%"));
+                });
+            }
+            if ($type = $request->input('type')) {
+                $countsQuery->where('type', $type);
+            }
+            if ($request->categories) {
+                $countsQuery->whereHas('categories', fn($q) =>
+                    $q->whereIn('categories.id', $request->categories)
+                );
+            }
+            $tagFilterForCount = array_filter((array) $request->input('tags', $request->input('tag') ? [$request->input('tag')] : []));
+            if (!empty($tagFilterForCount)) {
+                $countsQuery->whereHas('tags', fn($q) => $q->whereIn('tags.id', $tagFilterForCount));
+            }
+            if ($year = $request->year) {
+                $countsQuery->whereYear('created_at', $year);
+            }
+            $statusCounts['all'] = (clone $countsQuery)->count();
+            foreach (['draft', 'published', 'archived'] as $s) {
+                $statusCounts[$s] = (clone $countsQuery)->where('status', $s)->count();
+            }
         }
 
         if ($search = $request->input('search')) {
@@ -71,13 +118,24 @@ class MediaController extends Controller
         $tags = Tag::all();
         $featured = $assets->first();
 
-        // Counts per type for the sidebar nav badges (case-insensitive).
+        // Counts per type for the sidebar nav badges.
+        // Non-admins only see published items in the listing, so the counts mirror that.
+        $countBase = Media::query();
+        if (!$isAdmin) {
+            $countBase->where('status', 'published');
+        }
         $typeCounts = [
-            'total' => Media::count(),
-            'photo' => Media::whereRaw('LOWER(type) = ?', ['photo'])->count(),
-            'video' => Media::whereRaw('LOWER(type) = ?', ['video'])->count(),
-            'ebook' => Media::whereRaw('LOWER(type) = ?', ['ebook'])->count(),
+            'total' => (clone $countBase)->count(),
+            'photo' => (clone $countBase)->whereRaw('LOWER(type) = ?', ['photo'])->count(),
+            'video' => (clone $countBase)->whereRaw('LOWER(type) = ?', ['video'])->count(),
+            'ebook' => (clone $countBase)->whereRaw('LOWER(type) = ?', ['ebook'])->count(),
         ];
+
+        // Sidebar extra counts.
+        $collectionCount = Collection::count();
+        $myListCount     = ($u = auth()->user())
+            ? $u->myList()->count() + $u->myListCollections()->count()
+            : 0;
 
         // View mode (grid/list) — persisted via cookie so it survives navigation.
         $requestedView = strtolower((string) $request->input('view'));
@@ -87,7 +145,7 @@ class MediaController extends Controller
             : (in_array($cookieView, ['grid', 'list'], true) ? $cookieView : 'list');
 
         $response = response()->view('users.all',
-            compact('assets', 'categories', 'tags', 'featured', 'typeCounts', 'view')
+            compact('assets', 'categories', 'tags', 'featured', 'typeCounts', 'view', 'activeStatus', 'statusCounts', 'collectionCount', 'myListCount')
         );
 
         // Persist the choice for 30 days whenever it changes or hasn't been set.
@@ -100,36 +158,39 @@ class MediaController extends Controller
 
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
-        $tags       = Tag::orderBy('name')->get();
-        return view('users.create', compact('categories', 'tags'));
+        $categories  = Category::orderBy('name')->get();
+        $tags        = Tag::orderBy('name')->get();
+        $collections = Collection::orderBy('name')->get();
+        return view('users.create', compact('categories', 'tags', 'collections'));
     }
 
     public function store(Request $request)
     {
         // Accept either an uploaded file OR an external URL — at least one is required.
         $source = $request->input('source') === 'link' ? 'link' : 'upload';
+        $type   = $request->input('type');
 
         $rules = [
-            'title'        => ['required', 'string', 'max:255'],
-            'type'         => ['required', 'in:photo,video,ebook'],
-            'status'       => ['nullable', 'in:draft,published,archived'],
-            'date'         => ['nullable', 'date'],
-            'location'     => ['nullable', 'string', 'max:255'],
-            'thumbnail'    => ['nullable', 'image', 'max:1024'], // 1 MB
-            'categories'   => ['nullable', 'array'],
-            'categories.*' => ['integer', 'exists:categories,id'],
-            'tags'         => ['nullable', 'array'],
-            'tags.*'       => ['integer', 'exists:tags,id'],
+            'title'         => ['required', 'string', 'max:255'],
+            'type'          => ['required', 'in:photo,video,ebook'],
+            'status'        => ['nullable', 'in:draft,published,archived'],
+            'date'          => ['nullable', 'date'],
+            'location'      => ['nullable', 'string', 'max:255'],
+            'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
+            'thumbnail'     => ['nullable', 'image', 'max:1024'], // 1 MB
+            'categories'    => ['nullable', 'array'],
+            'categories.*'  => ['integer', 'exists:categories,id'],
+            'tags'          => ['nullable', 'array'],
+            'tags.*'        => ['integer', 'exists:tags,id'],
         ];
 
         if ($source === 'link') {
             $rules['file_url'] = ['required', 'url', 'max:2048'];
         } else {
-            $rules['file'] = ['required', 'file', 'max:51200']; // 50 MB
+            $rules['file'] = $this->fileRulesForType($type, true);
         }
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, $this->fileValidationMessages());
 
         $filePath = $source === 'upload'
             ? $request->file('file')->store('media', 'public')
@@ -165,6 +226,17 @@ class MediaController extends Controller
             ]);
         }
 
+        // Optional collection assignment.
+        if (!empty($data['collection_id'] ?? null)) {
+            $collection = Collection::find($data['collection_id']);
+            if ($collection) {
+                $media->details()->create([
+                    'key'   => 'collection',
+                    'value' => $collection->name,
+                ]);
+            }
+        }
+
         return redirect()
             ->route('media.show', $media)
             ->with('status', 'Media saved.');
@@ -173,35 +245,39 @@ class MediaController extends Controller
     public function edit(Media $media)
     {
         $media->load(['categories', 'tags', 'details']);
-        $categories = Category::orderBy('name')->get();
-        $tags       = Tag::orderBy('name')->get();
-        return view('users.edit', compact('media', 'categories', 'tags'));
+        $categories  = Category::orderBy('name')->get();
+        $tags        = Tag::orderBy('name')->get();
+        $collections = Collection::orderBy('name')->get();
+        return view('users.edit', compact('media', 'categories', 'tags', 'collections'));
     }
 
     public function update(Request $request, Media $media)
     {
         $source = $request->input('source', $media->file_url ? 'link' : 'upload');
 
+        $type = $request->input('type', $media->type);
+
         $rules = [
-            'title'        => ['required', 'string', 'max:255'],
-            'type'         => ['required', 'in:photo,video,ebook'],
-            'status'       => ['nullable', 'in:draft,published,archived'],
-            'date'         => ['nullable', 'date'],
-            'location'     => ['nullable', 'string', 'max:255'],
-            'thumbnail'    => ['nullable', 'image', 'max:1024'],
-            'categories'   => ['nullable', 'array'],
-            'categories.*' => ['integer', 'exists:categories,id'],
-            'tags'         => ['nullable', 'array'],
-            'tags.*'       => ['integer', 'exists:tags,id'],
+            'title'         => ['required', 'string', 'max:255'],
+            'type'          => ['required', 'in:photo,video,ebook'],
+            'status'        => ['nullable', 'in:draft,published,archived'],
+            'date'          => ['nullable', 'date'],
+            'location'      => ['nullable', 'string', 'max:255'],
+            'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
+            'thumbnail'     => ['nullable', 'image', 'max:1024'],
+            'categories'    => ['nullable', 'array'],
+            'categories.*'  => ['integer', 'exists:categories,id'],
+            'tags'          => ['nullable', 'array'],
+            'tags.*'        => ['integer', 'exists:tags,id'],
         ];
 
         if ($source === 'link') {
             $rules['file_url'] = ['required', 'url', 'max:2048'];
         } else {
-            $rules['file'] = ['nullable', 'file', 'max:51200']; // optional on edit
+            $rules['file'] = $this->fileRulesForType($type, false); // optional on edit
         }
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, $this->fileValidationMessages());
 
         $payload = [
             'title'  => $data['title'],
@@ -250,9 +326,46 @@ class MediaController extends Controller
             $existingLoc->delete();
         }
 
+        // Collection assignment: upsert when picked, clear when cleared.
+        $existingCol = $media->details()->where('key', 'collection')->first();
+        if (!empty($data['collection_id'])) {
+            $collection = Collection::find($data['collection_id']);
+            if ($collection) {
+                if ($existingCol) {
+                    $existingCol->update(['value' => $collection->name]);
+                } else {
+                    $media->details()->create(['key' => 'collection', 'value' => $collection->name]);
+                }
+            }
+        } elseif ($existingCol) {
+            $existingCol->delete();
+        }
+
         return redirect()
             ->route('media.show', $media)
             ->with('status', 'Media updated.');
+    }
+
+    /**
+     * Build the validation rules for an uploaded file, scoped to the chosen media type.
+     */
+    protected function fileRulesForType(?string $type, bool $required): array
+    {
+        $base = [$required ? 'required' : 'nullable', 'file', 'max:51200']; // 50 MB
+
+        return match (strtolower((string) $type)) {
+            'photo' => array_merge($base, ['mimes:jpg,jpeg,png,gif,webp,bmp,svg']),
+            'video' => array_merge($base, ['mimes:mp4,webm,mov,avi,mkv,m4v']),
+            'ebook' => array_merge($base, ['mimes:pdf,doc,docx,xls,xlsx']),
+            default => $base,
+        };
+    }
+
+    protected function fileValidationMessages(): array
+    {
+        return [
+            'file.mimes' => 'The file type does not match the selected media type. Photos must be an image, videos must be a video file, books must be PDF/DOC/DOCX/XLS/XLSX.',
+        ];
     }
 
     public function destroy(Media $media)

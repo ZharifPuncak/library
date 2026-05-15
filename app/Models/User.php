@@ -62,6 +62,24 @@ class User extends Authenticatable
         return $this->hasMany(Media::class, 'uploadedByUserID', 'id');
     }
 
+    /**
+     * Personal "My List" — media items this user has saved for later.
+     */
+    public function myList()
+    {
+        return $this->belongsToMany(Media::class, 'my_list_items', 'user_id', 'media_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Personal "My List" — collections this user has saved for later.
+     */
+    public function myListCollections()
+    {
+        return $this->belongsToMany(\App\Models\Collection::class, 'my_list_collections', 'user_id', 'collection_id')
+            ->withTimestamps();
+    }
+
     // ----------------------------------------------------
     // ACCESSORS / HELPER METHODS
     // ----------------------------------------------------

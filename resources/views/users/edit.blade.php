@@ -14,23 +14,10 @@
 
 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-    <div class="mb-6 flex items-center justify-between gap-3 flex-wrap">
-        <a href="{{ route('media.show', $media) }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-            Back to media
-        </a>
-
-        <form method="POST" action="{{ route('media.destroy', $media) }}"
-              onsubmit="return confirm('Delete this media item? This cannot be undone.');">
-            @csrf
-            @method('DELETE')
-            <button type="submit"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 hover:bg-red-500 text-red-600 hover:text-white text-xs font-bold transition-colors border border-red-100 hover:border-red-500">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
-                Delete
-            </button>
-        </form>
-    </div>
+    <a href="{{ route('media.show', $media) }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+        Back to media
+    </a>
 
     <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
         <h1 class="text-xl font-bold text-lib-navy mb-1">Edit Media</h1>
@@ -113,8 +100,14 @@
                         </p>
                     @endif
                     <input id="file" type="file" name="file"
+                           :accept="type === 'photo' ? 'image/*' : (type === 'video' ? 'video/*' : '.pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')"
                            class="w-full text-sm text-slate-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-lib-light file:text-lib-navy hover:file:bg-lib-sky hover:file:text-white transition-colors">
-                    <p class="text-xs text-slate-400 mt-1.5">Leave empty to keep the existing file. Max 50 MB.</p>
+                    <p class="text-xs text-slate-400 mt-1.5">
+                        Leave empty to keep the existing file. Max 50 MB.
+                        <span x-show="type === 'photo'">Accepted: JPG, PNG, GIF, WEBP, BMP, SVG.</span>
+                        <span x-show="type === 'video'" x-cloak>Accepted: MP4, WEBM, MOV, AVI, MKV.</span>
+                        <span x-show="type === 'ebook'" x-cloak>Accepted: PDF, DOC, DOCX, XLS, XLSX.</span>
+                    </p>
                 </div>
 
                 <div x-show="source === 'link'" x-cloak>
@@ -122,6 +115,10 @@
                         <input id="file_url" type="url" name="file_url" value="{{ old('file_url', $media->file_url) }}"
                                :required="source === 'link'"
                                placeholder=" "
+                               autocomplete="off"
+                               autocorrect="off"
+                               autocapitalize="off"
+                               spellcheck="false"
                                class="{{ $floatInput }}">
                         <label for="file_url" class="{{ $floatLabel }}">File URL</label>
                     </div>
@@ -137,6 +134,29 @@
                     <label for="location" class="{{ $floatLabel }}">Location <span class="font-normal text-slate-400">(optional)</span></label>
                 </div>
                 <p class="text-xs text-slate-400 mt-1.5">Where the physical copy is shelved, if applicable.</p>
+            </div>
+
+            {{-- Collection --}}
+            @php
+                $currentCollectionName = $media->getDetail('collection');
+                $currentCollectionId   = $currentCollectionName
+                    ? (\App\Models\Collection::where('name', $currentCollectionName)->value('id') ?? '')
+                    : '';
+                $oldCollection = (int) old('collection_id', $currentCollectionId);
+            @endphp
+            <div class="relative">
+                <select id="collection_id" name="collection_id" class="{{ $floatSelect }}">
+                    <option value="">— None —</option>
+                    @foreach($collections as $col)
+                        <option value="{{ $col->id }}" {{ $oldCollection === $col->id ? 'selected' : '' }}>{{ $col->name }}</option>
+                    @endforeach
+                </select>
+                <label for="collection_id" class="{{ $staticLabel }}">
+                    Collection <span class="font-normal text-slate-400">(optional)</span>
+                </label>
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </span>
             </div>
 
             <div class="rounded-2xl border border-slate-200 p-5">
@@ -156,11 +176,18 @@
             </div>
 
             <div class="rounded-2xl border border-slate-200 p-5" x-data="{ selected: @js($currentCats) }">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                         Categories <span class="font-normal normal-case text-slate-400">(select one or more)</span>
                     </label>
-                    <span class="text-[10px] font-bold text-slate-400"><span x-text="selected.length"></span> selected</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400"><span x-text="selected.length"></span> selected</span>
+                        <a href="{{ route('categories.index') }}" target="_blank"
+                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-lib-light text-lib-sky hover:bg-lib-sky hover:text-white text-[10px] font-bold transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            Manage
+                        </a>
+                    </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($categories as $cat)

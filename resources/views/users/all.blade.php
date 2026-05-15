@@ -69,8 +69,8 @@
                     ['label' => 'Videos',     'icon' => 'video',      'route' => route('media.index', ['type' => 'video']), 'active' => $currentType === 'video',             'count' => $typeCounts['video']],
                     ['label' => 'Books',      'icon' => 'ebook',      'route' => route('media.index', ['type' => 'ebook']), 'active' => $currentType === 'ebook',             'count' => $typeCounts['ebook']],
                     ['divider' => true],
-                    ['label' => 'Collection', 'icon' => 'collection', 'route' => route('collections.index'),                'active' => request()->routeIs('collections.*'),  'count' => null],
-                    ['label' => 'My List',    'icon' => 'list',       'route' => '#',                                       'active' => false,                                'count' => null],
+                    ['label' => 'Collection', 'icon' => 'collection', 'route' => route('collections.index'),                'active' => request()->routeIs('collections.*'),  'count' => $collectionCount ?? 0],
+                    ['label' => 'My List',    'icon' => 'list',       'route' => route('mylist.index'),                     'active' => request()->routeIs('mylist.*'),       'count' => $myListCount ?? 0],
                     ['label' => 'VR Tour',    'icon' => 'vr',         'route' => route('vr'),                               'active' => false,                                'count' => null],
                 ];
             @endphp
@@ -134,7 +134,7 @@
                                    class="flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 {{ $item['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-500 hover:bg-slate-50 hover:text-lib-navy' }}">
                                     <span class="w-5 h-5 flex items-center justify-center">{!! $iconSvg($item['icon']) !!}</span>
                                     <span>{{ $item['label'] }}</span>
-                                    @if(!is_null($item['count'] ?? null))
+                                    @if(!empty($item['count']))
                                         <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {{ $item['active'] ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500' }}">{{ $item['count'] }}</span>
                                     @endif
                                 </a>
@@ -196,7 +196,7 @@
                                             <span class="hidden xl:inline">{{ $item['label'] }}</span>
                                             @if($isVr)
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hidden xl:inline-block ml-auto h-3.5 w-3.5 opacity-70"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                            @elseif(!is_null($item['count'] ?? null))
+                                            @elseif(!empty($item['count']))
                                                 <span class="hidden xl:inline-block ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold {{ $item['active'] ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500' }}">{{ $item['count'] }}</span>
                                             @endif
                                         </a>
@@ -338,6 +338,42 @@
                             </p>
                         @endif
                     </form>
+
+                    {{-- Status tabs (admin only) --}}
+                    @auth
+                        @if(Auth::user()->isAdmin() && isset($statusCounts))
+                            @php
+                                $statusBaseQuery = request()->except(['status', 'page']);
+                                $statusTabs = [
+                                    'all'       => 'All',
+                                    'draft'     => 'Draft',
+                                    'published' => 'Published',
+                                    'archived'  => 'Archived',
+                                ];
+                            @endphp
+                            <nav class="-mx-6 px-6 mb-5 border-b border-slate-200 overflow-x-auto no-scrollbar">
+                                <ul class="flex items-center gap-1 min-w-max">
+                                    @foreach($statusTabs as $key => $label)
+                                        @php
+                                            $isActive = ($activeStatus ?? 'all') === $key;
+                                            $href     = $key === 'all'
+                                                ? route('media.index', $statusBaseQuery)
+                                                : route('media.index', array_merge($statusBaseQuery, ['status' => $key]));
+                                        @endphp
+                                        <li>
+                                            <a href="{{ $href }}"
+                                               class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition-colors {{ $isActive ? 'border-lib-sky text-lib-navy' : 'border-transparent text-slate-500 hover:text-lib-navy hover:border-slate-300' }}">
+                                                {{ $label }}
+                                                @if(!empty($statusCounts[$key]))
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $isActive ? 'bg-lib-sky text-white' : 'bg-slate-100 text-slate-500' }}">{{ $statusCounts[$key] }}</span>
+                                                @endif
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </nav>
+                        @endif
+                    @endauth
 
                     {{-- Category pills (server-side filter) --}}
                     @php

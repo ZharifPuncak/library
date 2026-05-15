@@ -3,152 +3,329 @@
 @section('title', $collectionName . ' - Collection')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ filterMobileOpen: false }">
-    
-    {{-- Back Button --}}
-    <a href="{{ route('collections.index') }}" 
-        class="inline-flex items-center gap-3 text-slate-500 hover:text-lib-navy font-black mb-8 transition-all group active:scale-95"
-        style="text-decoration: none; font-family: 'Fredoka', sans-serif;">
-        <div class="bg-white p-2.5 rounded-xl shadow-sm group-hover:shadow-md transition-all border border-slate-100 flex items-center justify-center">
-            <svg class="h-4 w-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
-            </svg>
-        </div>
-        <span class="text-xs font-bold uppercase tracking-widest">Back to Collections</span>
-    </a>
+@php
+    $defaultThumb = asset('images/logo.png');
+    $typeLabels   = ['photo' => 'Photo', 'video' => 'Video', 'ebook' => 'Book'];
 
-    <!-- Header with Stats -->
-    <div class="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-        <div>
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Event Album</p>
-            <h1 class="text-4xl font-black text-lib-navy uppercase tracking-tighter mb-2">{{ $collectionName }}</h1>
-            <p class="text-slate-500 font-medium text-lg">Discover all media captured during this event.</p>
-        </div>
+    // Build a JSON payload for the inline previewer.
+    $previewItems = $assets->getCollection()->map(function ($asset) use ($defaultThumb, $collection) {
+        $type   = strtolower($asset->type);
+        $src    = $asset->file_url ?: ($asset->file_path ? asset('storage/' . $asset->file_path) : null);
+        $thumb  = $asset->thumbnail_path
+            ? asset('storage/' . $asset->thumbnail_path)
+            : ($type === 'photo' ? $src : null);
+        return [
+            'id'    => $asset->id,
+            'title' => $asset->title,
+            'type'  => $type,
+            'src'   => $src,
+            'thumb' => $thumb ?: $defaultThumb,
+            'date'  => $asset->created_at?->format('M j, Y'),
+            'url'   => route('collections.media.show', [$collection, $asset]),
+        ];
+    })->values();
+@endphp
 
-        {{-- Stats --}}
-        <div class="bg-white px-8 py-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-center gap-x-8 gap-y-4 flex-shrink-0">
-            <div class="flex items-center gap-3">
-                <p class="text-2xl font-black text-lib-navy leading-none">{{ $counts['total'] }}</p>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Media</p>
-            </div>
-            <div class="w-px h-8 bg-slate-100 hidden md:block"></div>
-            <div class="flex items-center gap-3">
-                <p class="text-2xl font-black text-lib-sky leading-none">{{ $counts['photo'] }}</p>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Photos</p>
-            </div>
-            <div class="w-px h-8 bg-slate-100 hidden md:block"></div>
-            <div class="flex items-center gap-3">
-                <p class="text-2xl font-black text-lib-navy leading-none">{{ $counts['video'] }}</p>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Videos</p>
-            </div>
-            <div class="w-px h-8 bg-slate-100 hidden md:block"></div>
-            <div class="flex items-center gap-3">
-                <p class="text-2xl font-black text-lib-sky leading-none">{{ $counts['ebook'] }}</p>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">e-Books</p>
-            </div>
-        </div>
-    </div>
+<div class="bg-slate-50 min-h-[calc(100vh-5rem)]">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-    <!-- Media Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 auto-rows-fr">
-        @forelse($assets as $asset)
-            <div class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col font-fredoka"
-                 onmouseenter="this.querySelector('video')?.play()" 
-                 onmouseleave="this.querySelector('video')?.load()">
-                
-                <!-- Media Preview -->
-                <div class="relative h-48 overflow-hidden bg-slate-100">
-                    <a href="{{ route('media.show', $asset) }}" class="block h-full w-full">
-                        @php
-                            $type = strtolower($asset->type);
-                            $isThumbnail = !empty($asset->thumbnail_path);
-                        @endphp
+        {{-- Back --}}
+        <a href="{{ route('collections.index') }}"
+           class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            Back to collections
+        </a>
 
-                        @if($type === 'video')
-                            <video src="{{ asset('storage/' . $asset->file_path) }}" 
-                                   @if($isThumbnail) poster="{{ asset('storage/' . $asset->thumbnail_path) }}" @endif
-                                   class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                                   muted playsinline></video>
-                            <div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none">
-                                <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20">
-                                    <svg class="h-6 w-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                </div>
-                            </div>
-                        @else
-                            @if($type === 'photo')
-                                <img src="{{ asset('storage/' . $asset->file_path) }}" 
-                                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                                     alt="{{ $asset->title }}">
-                            @else
-                                {{-- E-book Support --}}
-                                @if($isThumbnail)
-                                    <img src="{{ asset('storage/' . $asset->thumbnail_path) }}" 
-                                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                                         alt="{{ $asset->title }}">
-                                @else
-                                    <div class="w-full h-full bg-slate-50 flex items-center justify-center text-4xl">📚</div>
-                                @endif
-                            @endif
-                        @endif
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                        <!-- Type Badge -->
-                        <div class="absolute top-3 left-3 z-20">
-                            <span class="bg-white/90 backdrop-blur-md text-lib-navy px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg flex items-center gap-1">
-                                {{ $asset->type }}
-                            </span>
-                        </div>
-                    </a>
-                </div>
+            {{-- ===== LEFT: TITLE + MEDIA LIST ===== --}}
+            <div class="lg:col-span-8 space-y-4">
 
-                <!-- Info -->
-                <div class="p-4 flex-grow flex flex-col">
-                    <div class="flex-grow">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-[9px] font-black text-lib-sky uppercase tracking-[0.2em]">{{ $asset->categories->first()->name ?? 'Asset' }}</span>
-                        </div>
-                        <a href="{{ route('media.show', $asset) }}" class="block">
-                            <h3 class="text-base font-bold text-slate-800 leading-tight mb-2 group-hover:text-lib-sky transition-colors line-clamp-2">
-                                {{ $asset->title }}
-                            </h3>
-                        </a>
-
-                        <!-- Tagging Section -->
-                        <div class="mt-3 flex items-center gap-1.5 overflow-hidden">
-                            <svg class="h-3 w-3 text-slate-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            <div class="flex flex-wrap gap-1.5 overflow-hidden">
-                                @foreach($asset->tags->take(2) as $tag)
-                                    <span class="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100/50 whitespace-nowrap">#{{ $tag->name }}</span>
-                                @endforeach
-                                @if($asset->tags->count() > 2)
-                                    <span class="text-[10px] font-black text-lib-sky bg-lib-light px-2 py-0.5 rounded-lg">+{{ $asset->tags->count() - 2 }}</span>
-                                @endif
-                            </div>
-                        </div>
+                {{-- Title card --}}
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex items-center gap-5">
+                    <div class="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0 rounded-2xl overflow-hidden bg-lib-light flex items-center justify-center text-lib-sky">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-9 w-9"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                     </div>
-                    
-                    <div class="mt-4 flex items-center justify-between text-[10px] text-slate-300 border-t border-slate-50 pt-3">
-                        <span class="font-bold uppercase tracking-wider">
-                            {{ $asset->created_at->format('M d, Y') }}
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-lib-sky mb-1">
+                            {{ $counts['total'] }} {{ Str::plural('item', $counts['total']) }}
+                        </p>
+                        <h1 class="text-2xl md:text-3xl font-bold text-lib-navy leading-tight truncate">{{ $collectionName }}</h1>
+                        <span class="inline-flex items-center px-2.5 py-1 mt-2 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
+                            Collection
                         </span>
-                        <div class="w-6 h-6 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-lib-sky group-hover:text-white transition-colors">
-                            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
-                        </div>
                     </div>
                 </div>
-            </div>
-        @empty
-            <div class="col-span-full text-center py-10 text-slate-500">
-                <p class="text-lg font-semibold">No assets found in this collection.</p>
-                <p class="text-sm">It looks like there are no media items here yet.</p>
-            </div>
-        @endforelse
-    </div>
 
-        <div class="mt-20">
-            {{ $assets->links() }}
+                {{-- Previewer --}}
+                @if($previewItems->isNotEmpty())
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden"
+                         x-data="{
+                             items: @js($previewItems),
+                             current: 0,
+                             get item() { return this.items[this.current]; },
+                             prev() { this.current = (this.current - 1 + this.items.length) % this.items.length; },
+                             next() { this.current = (this.current + 1) % this.items.length; },
+                             jump(i) { this.current = i; }
+                         }"
+                         @keydown.left.window="prev()"
+                         @keydown.right.window="next()">
+
+                        <div class="relative">
+                            {{-- Prev --}}
+                            <button type="button" @click="prev()" x-show="items.length > 1"
+                                    class="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white shadow-md border border-slate-200 text-slate-600 hover:bg-lib-navy hover:text-white hover:border-lib-navy flex items-center justify-center transition-colors"
+                                    aria-label="Previous">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
+                            {{-- Next --}}
+                            <button type="button" @click="next()" x-show="items.length > 1"
+                                    class="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white shadow-md border border-slate-200 text-slate-600 hover:bg-lib-navy hover:text-white hover:border-lib-navy flex items-center justify-center transition-colors"
+                                    aria-label="Next">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+
+                            {{-- Counter --}}
+                            <span x-show="items.length > 1" x-text="(current + 1) + ' / ' + items.length"
+                                  class="absolute top-4 right-4 z-20 px-3 py-1 rounded-full text-xs font-bold bg-white/95 text-slate-700 shadow border border-slate-200"></span>
+
+                            {{-- Photo — full-bleed --}}
+                            <template x-if="item && item.type === 'photo'">
+                                <img :src="item.src || item.thumb" :alt="item.title"
+                                     class="block w-full h-auto object-cover">
+                            </template>
+                            {{-- Video --}}
+                            <template x-if="item && item.type === 'video'">
+                                <div class="bg-slate-50 flex items-center justify-center p-4 min-h-[480px]">
+                                    <video :src="item.src" controls
+                                           class="max-w-full max-h-[480px] rounded-xl"></video>
+                                </div>
+                            </template>
+                            {{-- Book --}}
+                            <template x-if="item && item.type === 'ebook'">
+                                <div class="bg-slate-50 p-4">
+                                    <iframe :src="item.src ? item.src + '#toolbar=1&navpanes=1&scrollbar=1&view=FitH' : ''"
+                                            class="w-full h-[600px] rounded-xl border border-slate-200 bg-white"></iframe>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-lib-sky mb-0.5" x-text="item?.date"></p>
+                                <h3 class="text-base font-bold text-lib-navy truncate" x-text="item?.title"></h3>
+                            </div>
+                            <a :href="item?.url"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-lib-sky hover:bg-lib-navy text-white text-xs font-bold transition-colors whitespace-nowrap">
+                                Open
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                        </div>
+
+                        {{-- Thumbnail strip --}}
+                        <div class="px-4 py-3 border-t border-slate-100 overflow-x-auto" x-show="items.length > 1">
+                            <div class="flex items-center gap-2 min-w-max">
+                                <template x-for="(it, i) in items" :key="it.id">
+                                    <button type="button" @click="jump(i)"
+                                            class="w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100 border-2 transition-colors"
+                                            :class="i === current ? 'border-lib-sky' : 'border-transparent hover:border-slate-300'">
+                                        <img :src="it.thumb" :alt="it.title" class="w-full h-full object-cover">
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Media list --}}
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-bold text-lib-navy">Media in this collection</h2>
+                        <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">{{ $assets->total() }} {{ Str::plural('item', $assets->total()) }}</span>
+                    </div>
+
+                    @if($assets->isEmpty())
+                        <div class="py-12 text-center text-slate-400 text-sm">No media in this collection yet.</div>
+                    @else
+                        <div class="flex flex-col divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden">
+                            @foreach($assets as $asset)
+                                @php
+                                    $type        = strtolower($asset->type);
+                                    $typeLabel   = $typeLabels[$type] ?? ucfirst($asset->type);
+                                    if (!empty($asset->thumbnail_path)) {
+                                        $thumbUrl = asset('storage/' . $asset->thumbnail_path);
+                                    } elseif ($type === 'photo' && !empty($asset->file_url)) {
+                                        $thumbUrl = $asset->file_url;
+                                    } elseif ($type === 'photo' && !empty($asset->file_path)) {
+                                        $thumbUrl = asset('storage/' . $asset->file_path);
+                                    } else {
+                                        $thumbUrl = $defaultThumb;
+                                    }
+                                    $hasRealThumb = $thumbUrl !== $defaultThumb;
+                                @endphp
+                                <a href="{{ route('collections.media.show', [$collection, $asset]) }}"
+                                   class="group flex items-center gap-4 p-3 hover:bg-slate-50 transition-colors">
+                                    <div class="w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
+                                        <img src="{{ $thumbUrl }}" alt="{{ $asset->title }}"
+                                             class="w-full h-full {{ $hasRealThumb ? 'object-cover' : 'object-contain p-1 bg-white' }}"
+                                             loading="lazy"
+                                             onerror="this.onerror=null; this.src='{{ $defaultThumb }}'; this.classList.remove('object-cover'); this.classList.add('object-contain','p-1','bg-white');">
+                                    </div>
+                                    <div class="flex-grow min-w-0">
+                                        <h3 class="text-sm font-bold text-slate-800 truncate group-hover:text-lib-sky transition-colors">{{ $asset->title }}</h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">{{ $typeLabel }} &middot; {{ $asset->created_at?->format('M j, Y') }}</p>
+                                    </div>
+                                    @if($asset->categories->isNotEmpty())
+                                        <span class="hidden sm:inline-block text-[10px] font-bold text-lib-sky bg-lib-light px-2 py-1 rounded-full whitespace-nowrap">
+                                            {{ $asset->categories->first()->name }}
+                                        </span>
+                                    @endif
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4 text-slate-300 flex-shrink-0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Pagination --}}
+                @if($assets->total() > 0 && $assets->hasPages())
+                    <div class="bg-white rounded-3xl px-6 py-4 shadow-sm border border-slate-100 flex items-center justify-between gap-4">
+                        <p class="text-sm text-slate-500 font-medium">
+                            Showing
+                            <span class="font-bold">{{ $assets->firstItem() }}</span>
+                            &ndash;
+                            <span class="font-bold">{{ $assets->lastItem() }}</span>
+                            of
+                            <span class="font-bold">{{ $assets->total() }}</span>
+                            results
+                        </p>
+                        <div class="flex items-center">
+                            {{ $assets->onEachSide(1)->links() }}
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- ===== RIGHT: DETAILS ===== --}}
+            <aside class="lg:col-span-4 space-y-4">
+
+                {{-- Breakdown card --}}
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Details</h2>
+                    <dl class="space-y-3 text-sm">
+                        <div class="flex items-start justify-between gap-3">
+                            <dt class="text-slate-500 font-medium">Total items</dt>
+                            <dd class="font-semibold text-slate-800">{{ $counts['total'] }}</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <dt class="text-slate-500 font-medium">Photos</dt>
+                            <dd class="font-semibold text-slate-800">{{ $counts['photo'] }}</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <dt class="text-slate-500 font-medium">Videos</dt>
+                            <dd class="font-semibold text-slate-800">{{ $counts['video'] }}</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <dt class="text-slate-500 font-medium">Books</dt>
+                            <dd class="font-semibold text-slate-800">{{ $counts['ebook'] }}</dd>
+                        </div>
+                        <div class="flex items-start justify-between gap-3 pt-3 border-t border-slate-100">
+                            <dt class="text-slate-500 font-medium">Created</dt>
+                            <dd class="font-semibold text-slate-800">{{ $collection->created_at?->format('d M Y') }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                {{-- Actions --}}
+                @php
+                    $hasDownloadable = \App\Models\Media::whereHas('details', fn($q) =>
+                            $q->where('key', 'collection')->where('value', $collection->name))
+                        ->whereNotNull('file_path')
+                        ->exists();
+                    $isAdmin = auth()->user()?->isAdmin();
+                    $inMyList = auth()->check()
+                        ? auth()->user()->myListCollections()->whereKey($collection->id)->exists()
+                        : false;
+                @endphp
+                @if($hasDownloadable || $isAdmin || auth()->check())
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Actions</h2>
+                        <div class="flex flex-col gap-2">
+                            @if($isAdmin)
+                                <a href="{{ route('collections.edit', $collection) }}"
+                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    Edit Collection
+                                </a>
+                            @endif
+                            @if($hasDownloadable)
+                                <a href="{{ route('collections.download', $collection) }}"
+                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    Download (.zip)
+                                </a>
+                            @endif
+
+                            @auth
+                                @if($inMyList)
+                                    <form method="POST" action="{{ route('mylist.collections.destroy', $collection) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-lib-light text-lib-navy hover:bg-lib-sky hover:text-white text-xs font-bold transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                            Remove from My List
+                                        </button>
+                                    </form>
+                                @else
+                                    <form method="POST" action="{{ route('mylist.collections.store', $collection) }}">
+                                        @csrf
+                                        <button type="submit"
+                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                            Add to My List
+                                        </button>
+                                    </form>
+                                @endif
+                            @endauth
+                            @if($isAdmin)
+                                <form method="POST" action="{{ route('collections.destroy', $collection) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" onclick="confirmDeleteCollection(event)"
+                                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-red-50 hover:bg-red-500 text-red-600 hover:text-white text-xs font-bold transition-colors border border-red-100 hover:border-red-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                                        Delete Collection
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </aside>
         </div>
     </div>
 </div>
+
+<script>
+    function confirmDeleteCollection(event) {
+        event.preventDefault();
+        const form = event.target.closest('form');
+        Swal.fire({
+            title: 'Delete this collection?',
+            text: 'The collection tag will be removed from all media in it. The media files themselves will remain.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+            background: '#fff5f5',
+            customClass: { popup: 'rounded-2xl border-2 border-red-200 shadow-2xl' }
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+</script>
 @endsection

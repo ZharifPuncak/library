@@ -93,8 +93,14 @@
                 {{-- Upload mode --}}
                 <div x-show="source === 'upload'" x-cloak>
                     <input id="file" type="file" name="file" :required="source === 'upload'"
+                           :accept="type === 'photo' ? 'image/*' : (type === 'video' ? 'video/*' : '.pdf,.doc,.docx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')"
                            class="w-full text-sm text-slate-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-lib-light file:text-lib-navy hover:file:bg-lib-sky hover:file:text-white transition-colors">
-                    <p class="text-xs text-slate-400 mt-1.5">Max 50 MB. Photos as image, videos as MP4, books as PDF.</p>
+                    <p class="text-xs text-slate-400 mt-1.5">
+                        Max 50 MB.
+                        <span x-show="type === 'photo'">Accepted: JPG, PNG, GIF, WEBP, BMP, SVG.</span>
+                        <span x-show="type === 'video'" x-cloak>Accepted: MP4, WEBM, MOV, AVI, MKV.</span>
+                        <span x-show="type === 'ebook'" x-cloak>Accepted: PDF, DOC, DOCX, XLS, XLSX.</span>
+                    </p>
                 </div>
 
                 {{-- Link mode --}}
@@ -103,6 +109,10 @@
                         <input id="file_url" type="url" name="file_url" value="{{ old('file_url') }}"
                                :required="source === 'link'"
                                placeholder=" "
+                               autocomplete="off"
+                               autocorrect="off"
+                               autocapitalize="off"
+                               spellcheck="false"
                                class="{{ $floatInput }}">
                         <label for="file_url" class="{{ $floatLabel }}">File URL</label>
                     </div>
@@ -123,6 +133,23 @@
                 <p class="text-xs text-slate-400 mt-1.5">Where the physical copy is shelved, if applicable.</p>
             </div>
 
+            {{-- Collection --}}
+            <div class="relative">
+                @php $oldCollection = (int) old('collection_id'); @endphp
+                <select id="collection_id" name="collection_id" class="{{ $floatSelect }}">
+                    <option value="">— None —</option>
+                    @foreach($collections as $col)
+                        <option value="{{ $col->id }}" {{ $oldCollection === $col->id ? 'selected' : '' }}>{{ $col->name }}</option>
+                    @endforeach
+                </select>
+                <label for="collection_id" class="{{ $staticLabel }}">
+                    Collection <span class="font-normal text-slate-400">(optional)</span>
+                </label>
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </span>
+            </div>
+
             <div class="rounded-2xl border border-slate-200 p-5">
                 <label for="thumbnail" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
                     Thumbnail <span class="font-normal normal-case text-slate-400">(optional)</span>
@@ -133,13 +160,20 @@
             </div>
 
             <div class="rounded-2xl border border-slate-200 p-5" x-data="{ selected: @js(array_map('intval', old('categories', []))) }">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                         Categories <span class="font-normal normal-case text-slate-400">(select one or more)</span>
                     </label>
-                    <span class="text-[10px] font-bold text-slate-400">
-                        <span x-text="selected.length"></span> selected
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-400">
+                            <span x-text="selected.length"></span> selected
+                        </span>
+                        <a href="{{ route('categories.index') }}" target="_blank"
+                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-lib-light text-lib-sky hover:bg-lib-sky hover:text-white text-[10px] font-bold transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            Manage
+                        </a>
+                    </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($categories as $cat)

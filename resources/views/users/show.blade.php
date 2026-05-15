@@ -12,11 +12,18 @@
     // Resolve the actual file URL (external link OR stored upload)
     $fileUrl = $asset->resource_url ?? ($asset->file_path ? asset('storage/' . $asset->file_path) : null);
 
-    $backRoute = isset($isCollectionContext) && $isCollectionContext
-        ? route('collections.show', $collectionName)
-        : (in_array($type, ['photo', 'video', 'ebook'], true)
-            ? route('media.index', ['type' => $type])
-            : route('media.index'));
+    $typeBackLabels = ['photo' => 'photos', 'video' => 'videos', 'ebook' => 'books'];
+
+    if (isset($isCollectionContext) && $isCollectionContext) {
+        $backRoute = route('collections.show', $collection ?? $collectionName);
+        $backLabel = 'Back to collections';
+    } elseif (in_array($type, ['photo', 'video', 'ebook'], true)) {
+        $backRoute = route('media.index', ['type' => $type]);
+        $backLabel = 'Back to ' . ($typeBackLabels[$type] ?? 'media');
+    } else {
+        $backRoute = route('media.index');
+        $backLabel = 'Back to media';
+    }
 @endphp
 
 <div class="bg-slate-50 min-h-[calc(100vh-5rem)]">
@@ -25,13 +32,13 @@
         {{-- Top bar: Back + Title --}}
         <div class="flex flex-wrap items-center gap-4 mb-6">
             <a href="{{ $backRoute }}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
+               class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-                Back
+                {{ $backLabel }}
             </a>
 
             @if(isset($collectionName) && $collectionName)
-                <a href="{{ route('collections.show', $collectionName) }}"
+                <a href="{{ route('collections.show', $collection ?? $collectionName) }}"
                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-lib-sky bg-lib-light hover:bg-lib-sky hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                     {{ $collectionName }}
@@ -112,20 +119,6 @@
 
                 </div>
 
-                @if($type === 'ebook' && $fileUrl)
-                    <div class="flex flex-wrap gap-2 mt-4">
-                        <a id="ebookOpenLink" href="{{ $fileUrl }}" target="_blank" rel="noopener noreferrer"
-                           class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-lib-sky hover:bg-lib-navy text-white text-xs font-bold transition-colors shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                            Open in new tab
-                        </a>
-                        <a id="ebookLink" href="{{ $fileUrl }}" download
-                           class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            Download
-                        </a>
-                    </div>
-                @endif
             </div>
 
             {{-- ===== RIGHT: DETAILS ===== --}}
@@ -218,7 +211,7 @@
                 @if(isset($collectionName) && $collectionName)
                     <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Collection</h2>
-                        <a href="{{ route('collections.show', $collectionName) }}"
+                        <a href="{{ route('collections.show', $collection ?? $collectionName) }}"
                            class="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-lib-light text-lib-navy hover:bg-lib-sky hover:text-white text-sm font-bold transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                             {{ $collectionName }}
@@ -226,19 +219,96 @@
                     </div>
                 @endif
 
-                {{-- Actions (admin only) --}}
-                @auth
-                    @if(Auth::user()->isAdmin())
-                        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Actions</h2>
-                            <a href="{{ route('media.edit', $asset) }}"
-                               class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                Edit Media
-                            </a>
+                {{-- Actions --}}
+                @php
+                    // Download only when the file was uploaded to local storage (not an external link).
+                    $canDownload  = $type === 'ebook' && !empty($asset->file_path);
+                    $downloadUrl  = $canDownload ? asset('storage/' . $asset->file_path) : null;
+                    $isAdmin      = auth()->user()?->isAdmin();
+                    $inMyList     = auth()->check()
+                        ? auth()->user()->myList()->whereKey($asset->id)->exists()
+                        : false;
+                    $showActions  = $canDownload || $isAdmin || auth()->check();
+                @endphp
+                @if($showActions)
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Actions</h2>
+                        <div class="flex flex-col gap-2">
+                            @if($isAdmin)
+                                <a href="{{ route('media.edit', $asset) }}"
+                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    Edit Media
+                                </a>
+                            @endif
+                            @if($canDownload)
+                                <a id="ebookLink" href="{{ $downloadUrl }}" download
+                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    Download
+                                </a>
+                            @endif
+
+                            @auth
+                                @if($inMyList)
+                                    <form method="POST" action="{{ route('mylist.destroy', $asset) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-lib-light text-lib-navy hover:bg-lib-sky hover:text-white text-xs font-bold transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                            Remove from My List
+                                        </button>
+                                    </form>
+                                @else
+                                    <form method="POST" action="{{ route('mylist.store', $asset) }}">
+                                        @csrf
+                                        <button type="submit"
+                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                            Add to My List
+                                        </button>
+                                    </form>
+                                @endif
+                            @endauth
+                            @if($isAdmin)
+                                <form method="POST" action="{{ route('media.destroy', $asset) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" onclick="confirmDeleteMedia(event)"
+                                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-red-50 hover:bg-red-500 text-red-600 hover:text-white text-xs font-bold transition-colors border border-red-100 hover:border-red-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                                        Delete
+                                    </button>
+                                </form>
+                            @endif
                         </div>
-                    @endif
-                @endauth
+                    </div>
+                @endif
+
+                <script>
+                    function confirmDeleteMedia(event) {
+                        event.preventDefault();
+                        const form = event.target.closest('form');
+                        Swal.fire({
+                            title: 'Delete this media?',
+                            text: 'This cannot be undone. The file and its metadata will be removed.',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#dc2626',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Yes, delete',
+                            cancelButtonText: 'Cancel',
+                            reverseButtons: true,
+                            background: '#fff5f5',
+                            customClass: {
+                                popup: 'rounded-2xl border-2 border-red-200 shadow-2xl'
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) form.submit();
+                        });
+                    }
+                </script>
             </aside>
         </div>
 
