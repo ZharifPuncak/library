@@ -44,6 +44,18 @@ class Media extends Model
         });
     }
 
+    /**
+     * Resolved URL to the underlying file — either the external link
+     * (when stored via "Use link") or the storage-relative upload.
+     */
+    public function getResourceUrlAttribute(): ?string
+    {
+        if (!empty($this->file_url)) {
+            return $this->file_url;
+        }
+        return $this->file_path ? asset('storage/' . $this->file_path) : null;
+    }
+
     public function details()
     {
         return $this->hasMany(MediaDetail::class, 'media_id');

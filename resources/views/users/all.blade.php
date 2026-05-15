@@ -49,7 +49,7 @@
     $typeLabels = [
         'photo' => 'Photo',
         'video' => 'Video',
-        'ebook' => 'Ebook',
+        'ebook' => 'Book',
     ];
 
     $activeCategoryIds = collect(request('categories', []))->map(fn ($id) => (int) $id)->all();
@@ -67,7 +67,7 @@
                     ['label' => 'Discover',   'icon' => 'home',       'route' => route('media.index'),                      'active' => $currentType === '',                  'count' => $typeCounts['total']],
                     ['label' => 'Photos',     'icon' => 'photo',      'route' => route('media.index', ['type' => 'photo']), 'active' => $currentType === 'photo',             'count' => $typeCounts['photo']],
                     ['label' => 'Videos',     'icon' => 'video',      'route' => route('media.index', ['type' => 'video']), 'active' => $currentType === 'video',             'count' => $typeCounts['video']],
-                    ['label' => 'E-books',    'icon' => 'ebook',      'route' => route('media.index', ['type' => 'ebook']), 'active' => $currentType === 'ebook',             'count' => $typeCounts['ebook']],
+                    ['label' => 'Books',      'icon' => 'ebook',      'route' => route('media.index', ['type' => 'ebook']), 'active' => $currentType === 'ebook',             'count' => $typeCounts['ebook']],
                     ['divider' => true],
                     ['label' => 'Collection', 'icon' => 'collection', 'route' => route('collections.index'),                'active' => request()->routeIs('collections.*'),  'count' => null],
                     ['label' => 'My List',    'icon' => 'list',       'route' => '#',                                       'active' => false,                                'count' => null],
@@ -147,11 +147,12 @@
             {{-- Desktop: vertical sidebar + tag filter --}}
             <aside class="hidden lg:block lg:col-span-2">
                 @php
-                    $activeTag = request('tag') ? (int) request('tag') : null;
-                    $tagBaseQuery = request()->except(['tag', 'page']);
+                    // Support both ?tag=N (legacy) and ?tags[]=N&tags[]=M (multi).
+                    $activeTagIds = array_map('intval', (array) request('tags', request('tag') ? [request('tag')] : []));
+                    $tagBaseQuery = request()->except(['tag', 'tags', 'page']);
                 @endphp
 
-                <div class="sticky top-36 md:top-40 space-y-4 max-h-[calc(100vh-11rem)] overflow-y-auto no-scrollbar">
+                <div class="space-y-4">
                     @php
                         // Split nav items into separate cards at every `divider` entry.
                         $navSections = [];
@@ -175,12 +176,27 @@
                         <nav class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
                             <ul class="space-y-1">
                                 @foreach($section as $item)
+                                    @php
+                                        $isVr = ($item['icon'] ?? null) === 'vr';
+                                        if ($item['active']) {
+                                            $itemClasses = $isVr
+                                                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
+                                                : 'bg-lib-sky text-white shadow-md shadow-lib-sky/30';
+                                        } else {
+                                            $itemClasses = $isVr
+                                                ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 font-bold'
+                                                : 'text-slate-500 hover:bg-slate-50 hover:text-lib-navy';
+                                        }
+                                    @endphp
                                     <li>
                                         <a href="{{ $item['route'] }}"
-                                           class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all {{ $item['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-500 hover:bg-slate-50 hover:text-lib-navy' }}">
+                                           @if($isVr) target="_blank" rel="noopener noreferrer" @endif
+                                           class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all {{ $itemClasses }}">
                                             <span class="w-5 h-5 flex items-center justify-center">{!! $iconSvg($item['icon']) !!}</span>
                                             <span class="hidden xl:inline">{{ $item['label'] }}</span>
-                                            @if(!is_null($item['count'] ?? null))
+                                            @if($isVr)
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="hidden xl:inline-block ml-auto h-3.5 w-3.5 opacity-70"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            @elseif(!is_null($item['count'] ?? null))
                                                 <span class="hidden xl:inline-block ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold {{ $item['active'] ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500' }}">{{ $item['count'] }}</span>
                                             @endif
                                         </a>
@@ -190,20 +206,38 @@
                         </nav>
                     @endforeach
 
-                {{-- Tag filter --}}
+                {{-- Tag filter (multi-select) --}}
                 @if($tags->isNotEmpty())
                     <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
                         <div class="flex items-center justify-between mb-3 px-1">
-                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tags</h3>
-                            @if($activeTag)
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Tags
+                                @if(count($activeTagIds))
+                                    <span class="ml-1 text-lib-sky">({{ count($activeTagIds) }})</span>
+                                @endif
+                            </h3>
+                            @if(count($activeTagIds))
                                 <a href="{{ route('media.index', $tagBaseQuery) }}"
                                    class="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors">Clear</a>
                             @endif
                         </div>
                         <div class="flex flex-wrap gap-1.5">
                             @foreach($tags as $tag)
-                                <a href="{{ route('media.index', array_merge($tagBaseQuery, ['tag' => $tag->id])) }}"
-                                   class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors {{ $activeTag === $tag->id ? 'bg-lib-sky text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-lib-navy' }}">
+                                @php
+                                    $isActive = in_array($tag->id, $activeTagIds, true);
+                                    // Toggle: remove if active, add if not.
+                                    $nextIds  = $isActive
+                                        ? array_values(array_diff($activeTagIds, [$tag->id]))
+                                        : array_values(array_merge($activeTagIds, [$tag->id]));
+                                    $tagHref  = empty($nextIds)
+                                        ? route('media.index', $tagBaseQuery)
+                                        : route('media.index', array_merge($tagBaseQuery, ['tags' => $nextIds]));
+                                @endphp
+                                <a href="{{ $tagHref }}"
+                                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors {{ $isActive ? 'bg-lib-sky text-white shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-lib-navy' }}">
+                                    @if($isActive)
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    @endif
                                     #{{ $tag->name }}
                                 </a>
                             @endforeach
@@ -219,7 +253,38 @@
                 <div id="categories" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
                     @php
                         $clearUrl = route('media.index', request()->except(['search', 'page']));
+
+                        $headerSubtitle = match (strtolower((string) request('type'))) {
+                            'photo' => 'Browse high-resolution photos from events, locations, and archives.',
+                            'video' => 'Watch documentaries, interviews, and archival footage.',
+                            'ebook' => 'Read reports, journals, and publications online.',
+                            default => 'Browse the digital library — photos, videos, and books from the archive.',
+                        };
+                        $headerTitle = match (strtolower((string) request('type'))) {
+                            'photo' => 'Photos',
+                            'video' => 'Videos',
+                            'ebook' => 'Books',
+                            default => 'Media',
+                        };
                     @endphp
+
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
+                        <div>
+                            <h1 class="text-xl font-bold text-lib-navy">{{ $headerTitle }}</h1>
+                            <p class="text-sm text-slate-500">{{ $headerSubtitle }}</p>
+                        </div>
+
+                        @auth
+                            @if(Auth::user()->isAdmin())
+                                <a href="{{ route('media.create') }}"
+                                   class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md whitespace-nowrap">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                    Add Media
+                                </a>
+                            @endif
+                        @endauth
+                    </div>
+
                     <form action="{{ route('media.index') }}" method="GET" class="mb-5"
                           x-data="{ query: @js((string) request('search')), hadSearch: @js((bool) request('search')) }"
                           x-init="$watch('query', value => {
@@ -293,20 +358,45 @@
                         $viewQuery   = array_merge(request()->except(['page']), ['view' => $nextView]);
                     @endphp
 
+                    @php
+                        // Toggle helper: clicking a category adds/removes it from the active set.
+                        $categoryHref = function ($catId) use ($activeCategoryIds, $baseQuery) {
+                            $isActive = in_array($catId, $activeCategoryIds, true);
+                            $nextIds  = $isActive
+                                ? array_values(array_diff($activeCategoryIds, [$catId]))
+                                : array_values(array_merge($activeCategoryIds, [$catId]));
+                            return empty($nextIds)
+                                ? route('media.index', $baseQuery)
+                                : route('media.index', array_merge($baseQuery, ['categories' => $nextIds]));
+                        };
+                    @endphp
+
                     <div x-data="{ expanded: @js($hiddenHasActive) }" class="flex flex-wrap items-center gap-2 mb-6">
                         <a href="{{ route('media.index', $baseQuery) }}"
                            class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ empty($activeCategoryIds) ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">All</a>
 
                         @foreach($visibleCategories as $cat)
-                            <a href="{{ route('media.index', array_merge($baseQuery, ['categories' => [$cat->id]])) }}"
-                               class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ in_array($cat->id, $activeCategoryIds, true) ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">{{ $cat->name }}</a>
+                            @php $isActive = in_array($cat->id, $activeCategoryIds, true); @endphp
+                            <a href="{{ $categoryHref($cat->id) }}"
+                               class="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ $isActive ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">
+                                @if($isActive)
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                @endif
+                                {{ $cat->name }}
+                            </a>
                         @endforeach
 
                         @if($hiddenCategories->isNotEmpty())
                             @foreach($hiddenCategories as $cat)
-                                <a href="{{ route('media.index', array_merge($baseQuery, ['categories' => [$cat->id]])) }}"
+                                @php $isActive = in_array($cat->id, $activeCategoryIds, true); @endphp
+                                <a href="{{ $categoryHref($cat->id) }}"
                                    x-show="expanded" x-cloak
-                                   class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ in_array($cat->id, $activeCategoryIds, true) ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">{{ $cat->name }}</a>
+                                   class="inline-flex items-center gap-1 px-4 py-1.5 rounded-full text-xs font-bold transition-colors {{ $isActive ? 'bg-lib-sky text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100' }}">
+                                    @if($isActive)
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    @endif
+                                    {{ $cat->name }}
+                                </a>
                             @endforeach
 
                             <button type="button" @click="expanded = !expanded"
@@ -354,15 +444,25 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 stagger">
                             @forelse($assets as $asset)
                                 @php
-                                    $thumb     = $asset->thumbnail_path ?: ($asset->type === 'photo' ? $asset->file_path : null);
                                     $typeKey   = strtolower((string) $asset->type);
                                     $typeLabel = $typeLabels[$typeKey] ?? ucfirst((string) $asset->type);
-                                    $thumbUrl  = $thumb ? asset('storage/' . $thumb) : $defaultThumb;
+
+                                    // Thumbnail in priority: explicit thumb → photo's own source (link or upload) → default logo.
+                                    if (!empty($asset->thumbnail_path)) {
+                                        $thumbUrl = asset('storage/' . $asset->thumbnail_path);
+                                    } elseif ($typeKey === 'photo' && !empty($asset->file_url)) {
+                                        $thumbUrl = $asset->file_url;
+                                    } elseif ($typeKey === 'photo' && !empty($asset->file_path)) {
+                                        $thumbUrl = asset('storage/' . $asset->file_path);
+                                    } else {
+                                        $thumbUrl = $defaultThumb;
+                                    }
+                                    $hasRealThumb = $thumbUrl !== $defaultThumb;
                                 @endphp
                                 <a href="{{ route('media.show', $asset) }}" class="group block">
                                     <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 shadow-md group-hover:shadow-xl transition-shadow relative">
                                         <img src="{{ $thumbUrl }}" alt="{{ $asset->title }}"
-                                             class="w-full h-full {{ $thumb ? 'object-cover' : 'object-contain p-6 bg-white' }} group-hover:scale-105 transition-transform duration-500"
+                                             class="w-full h-full {{ $hasRealThumb ? 'object-cover' : 'object-contain p-6 bg-white' }} group-hover:scale-105 transition-transform duration-500"
                                              loading="lazy"
                                              onerror="this.onerror=null; this.src='{{ $defaultThumb }}'; this.classList.remove('object-cover'); this.classList.add('object-contain','p-6','bg-white');">
                                     </div>
@@ -381,16 +481,25 @@
                         <div class="flex flex-col divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden stagger">
                             @forelse($assets as $asset)
                                 @php
-                                    $thumb     = $asset->thumbnail_path ?: ($asset->type === 'photo' ? $asset->file_path : null);
                                     $typeKey   = strtolower((string) $asset->type);
                                     $typeLabel = $typeLabels[$typeKey] ?? ucfirst((string) $asset->type);
-                                    $thumbUrl  = $thumb ? asset('storage/' . $thumb) : $defaultThumb;
+
+                                    if (!empty($asset->thumbnail_path)) {
+                                        $thumbUrl = asset('storage/' . $asset->thumbnail_path);
+                                    } elseif ($typeKey === 'photo' && !empty($asset->file_url)) {
+                                        $thumbUrl = $asset->file_url;
+                                    } elseif ($typeKey === 'photo' && !empty($asset->file_path)) {
+                                        $thumbUrl = asset('storage/' . $asset->file_path);
+                                    } else {
+                                        $thumbUrl = $defaultThumb;
+                                    }
+                                    $hasRealThumb = $thumbUrl !== $defaultThumb;
                                 @endphp
                                 <a href="{{ route('media.show', $asset) }}"
                                    class="group flex items-center gap-4 p-3 hover:bg-slate-50 transition-colors">
                                     <div class="w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-slate-100">
                                         <img src="{{ $thumbUrl }}" alt="{{ $asset->title }}"
-                                             class="w-full h-full {{ $thumb ? 'object-cover' : 'object-contain p-1 bg-white' }}"
+                                             class="w-full h-full {{ $hasRealThumb ? 'object-cover' : 'object-contain p-1 bg-white' }}"
                                              loading="lazy"
                                              onerror="this.onerror=null; this.src='{{ $defaultThumb }}'; this.classList.remove('object-cover'); this.classList.add('object-contain','p-1','bg-white');">
                                     </div>

@@ -55,7 +55,10 @@
                 <div>
                     <label for="username" class="block text-sm font-medium text-slate-700 mb-1.5">Username</label>
                     <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus
-                           autocomplete="username"
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false"
                            class="w-full px-3 py-2.5 rounded-md border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-lib-blue focus:border-lib-blue transition-colors @error('username') border-red-400 @enderror">
                     @error('username')
                         <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
@@ -95,6 +98,14 @@
                     </a>
                 @endif
             </form>
+        </div>
+
+        <div class="mt-5 text-center">
+            <a href="{{ route('home') }}"
+               class="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                Return to home
+            </a>
         </div>
 
         <p class="text-center text-white/70 text-xs mt-6">

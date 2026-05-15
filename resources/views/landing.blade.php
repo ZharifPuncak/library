@@ -17,7 +17,7 @@
                 Discover. Read. Explore.
             </h1>
             <p class="text-lg md:text-xl text-sky-100 mb-10 max-w-2xl">
-                A curated archive of photos, videos, ebooks and a 360&deg; virtual library tour &mdash;
+                A curated archive of photos, videos, books and a 360&deg; virtual library tour &mdash;
                 everything in one place.
             </p>
             <div class="flex flex-wrap gap-4">

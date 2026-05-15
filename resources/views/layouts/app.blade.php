@@ -52,7 +52,7 @@
     <header class="sticky top-0 z-50 shadow-lg">
         <!-- Top Bar: Logo & User Info -->
         <div class="bg-lib-navy text-white border-b border-white/5">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16 md:h-20">
                     <!-- Logo Section (Original Style) -->
                     <div class="flex-shrink-0 flex items-center">
@@ -89,6 +89,11 @@
                                         <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Signed in as</div>
                                         <div class="text-sm font-bold text-lib-navy truncate">{{ Auth::user()->name }}</div>
                                     </div>
+                                    <a href="{{ route('profile.edit') }}"
+                                       class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-lib-navy transition-colors border-b border-slate-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                        Profile
+                                    </a>
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <button type="submit" onclick="confirmLogout(event)"
@@ -107,28 +112,30 @@
 
     </header>
 
-    <!-- Page Nav Pills: Media / Users (sticky below header, content centered vertically) -->
+    <!-- Page Nav Pills: Media / Users (admin only, sticky below header — hidden on home) -->
     @auth
-        @php
-            $mediaActive = request()->routeIs('media.*') || request()->routeIs('collections.*');
-            $usersActive = request()->routeIs('users.*');
-        @endphp
-        <div class="sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <nav class="flex justify-center items-center gap-2 h-14">
-                    <a href="{{ route('media.index') }}"
-                       class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $mediaActive ? 'bg-lib-navy text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        Media
-                    </a>
-                    <a href="#"
-                       class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $usersActive ? 'bg-lib-navy text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        Users
-                    </a>
-                </nav>
+        @if(Auth::user()->isAdmin() && !request()->routeIs('home'))
+            @php
+                $mediaActive = request()->routeIs('media.*') || request()->routeIs('collections.*');
+                $usersActive = request()->routeIs('users.*');
+            @endphp
+            <div class="sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
+                <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+                    <nav class="flex justify-start items-center gap-2 h-14">
+                        <a href="{{ route('media.index') }}"
+                           class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $mediaActive ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            Media
+                        </a>
+                        <a href="{{ route('users.index') }}"
+                           class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $usersActive ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            Users
+                        </a>
+                    </nav>
+                </div>
             </div>
-        </div>
+        @endif
     @endauth
 
     <!-- Main Content -->

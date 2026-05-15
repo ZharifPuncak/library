@@ -20,9 +20,6 @@ class MediaSeeder extends Seeder
         'Brochures',
         'Company Profiles',
         'Country Reports',
-        'Photos',
-        'Videos',
-        'Ebooks',
     ];
 
     /**
