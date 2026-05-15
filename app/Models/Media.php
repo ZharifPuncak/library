@@ -16,12 +16,15 @@ class Media extends Model
     protected $fillable = [
         'uuid',
         'type',
+        'status',
         'title',
         'file_path',
         'file_url',
         'date',
         'thumbnail_path',
     ];
+
+    public const STATUSES = ['draft', 'published', 'archived'];
 
     protected $casts = [
         'date' => 'datetime',

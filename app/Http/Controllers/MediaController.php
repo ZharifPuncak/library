@@ -19,7 +19,7 @@ class MediaController extends Controller
         $this->middleware(function ($request, $next) {
             abort_unless(auth()->user()?->isAdmin(), 403);
             return $next($request);
-        })->only(['create', 'store']);
+        })->only(['create', 'store', 'edit', 'update', 'destroy']);
     }
 
     /**
@@ -30,6 +30,11 @@ class MediaController extends Controller
     public function index(Request $request)
     {
         $query = Media::with(['details', 'categories', 'tags']);
+
+        // Admins see every status; regular users only see published items.
+        if (!auth()->user()?->isAdmin()) {
+            $query->where('status', 'published');
+        }
 
         if ($search = $request->input('search')) {
             $query->where(function (Builder $q) use ($search) {
@@ -108,6 +113,7 @@ class MediaController extends Controller
         $rules = [
             'title'        => ['required', 'string', 'max:255'],
             'type'         => ['required', 'in:photo,video,ebook'],
+            'status'       => ['nullable', 'in:draft,published,archived'],
             'date'         => ['nullable', 'date'],
             'location'     => ['nullable', 'string', 'max:255'],
             'thumbnail'    => ['nullable', 'image', 'max:1024'], // 1 MB
@@ -137,6 +143,7 @@ class MediaController extends Controller
         $media = Media::create([
             'title'          => $data['title'],
             'type'           => $data['type'],
+            'status'         => $data['status'] ?? 'draft',
             'file_path'      => $filePath,
             'file_url'       => $fileUrl,
             'thumbnail_path' => $thumbPath,
@@ -163,6 +170,106 @@ class MediaController extends Controller
             ->with('status', 'Media saved.');
     }
 
+    public function edit(Media $media)
+    {
+        $media->load(['categories', 'tags', 'details']);
+        $categories = Category::orderBy('name')->get();
+        $tags       = Tag::orderBy('name')->get();
+        return view('users.edit', compact('media', 'categories', 'tags'));
+    }
+
+    public function update(Request $request, Media $media)
+    {
+        $source = $request->input('source', $media->file_url ? 'link' : 'upload');
+
+        $rules = [
+            'title'        => ['required', 'string', 'max:255'],
+            'type'         => ['required', 'in:photo,video,ebook'],
+            'status'       => ['nullable', 'in:draft,published,archived'],
+            'date'         => ['nullable', 'date'],
+            'location'     => ['nullable', 'string', 'max:255'],
+            'thumbnail'    => ['nullable', 'image', 'max:1024'],
+            'categories'   => ['nullable', 'array'],
+            'categories.*' => ['integer', 'exists:categories,id'],
+            'tags'         => ['nullable', 'array'],
+            'tags.*'       => ['integer', 'exists:tags,id'],
+        ];
+
+        if ($source === 'link') {
+            $rules['file_url'] = ['required', 'url', 'max:2048'];
+        } else {
+            $rules['file'] = ['nullable', 'file', 'max:51200']; // optional on edit
+        }
+
+        $data = $request->validate($rules);
+
+        $payload = [
+            'title'  => $data['title'],
+            'type'   => $data['type'],
+            'status' => $data['status'] ?? $media->status,
+            'date'   => $data['date'] ?? $media->date,
+        ];
+
+        if ($source === 'link') {
+            $payload['file_url']  = $data['file_url'];
+            // Clean up any previously uploaded file we're switching away from.
+            if ($media->file_path) {
+                Storage::disk('public')->delete($media->file_path);
+                $payload['file_path'] = null;
+            }
+        } else {
+            $payload['file_url'] = null;
+            if ($request->hasFile('file')) {
+                if ($media->file_path) {
+                    Storage::disk('public')->delete($media->file_path);
+                }
+                $payload['file_path'] = $request->file('file')->store('media', 'public');
+            }
+        }
+
+        if ($request->hasFile('thumbnail')) {
+            if ($media->thumbnail_path) {
+                Storage::disk('public')->delete($media->thumbnail_path);
+            }
+            $payload['thumbnail_path'] = $request->file('thumbnail')->store('media/thumbnails', 'public');
+        }
+
+        $media->update($payload);
+        $media->categories()->sync($data['categories'] ?? []);
+        $media->tags()->sync($data['tags'] ?? []);
+
+        // Location: book-only metadata
+        $existingLoc = $media->details()->where('key', 'location')->first();
+        if ($data['type'] === 'ebook' && !empty($data['location'])) {
+            if ($existingLoc) {
+                $existingLoc->update(['value' => $data['location']]);
+            } else {
+                $media->details()->create(['key' => 'location', 'value' => $data['location']]);
+            }
+        } elseif ($existingLoc) {
+            $existingLoc->delete();
+        }
+
+        return redirect()
+            ->route('media.show', $media)
+            ->with('status', 'Media updated.');
+    }
+
+    public function destroy(Media $media)
+    {
+        if ($media->file_path) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+        if ($media->thumbnail_path) {
+            Storage::disk('public')->delete($media->thumbnail_path);
+        }
+        $media->delete();
+
+        return redirect()
+            ->route('media.index')
+            ->with('status', 'Media deleted.');
+    }
+
     public function show(Media $media)
     {
         $asset = $media;
@@ -172,16 +279,29 @@ class MediaController extends Controller
         $collectionDetail = $asset->details->where('key', 'collection')->first();
         $collectionName = $collectionDetail ? $collectionDetail->value : null;
 
-        $relatedAssets = collect();
+        // Related items: must share EVERY category AND EVERY tag of the current item (perfect match).
+        $relatedAssets    = collect();
+        $sharedCategories = $asset->categories ?? collect();
+        $sharedTags       = $asset->tags ?? collect();
 
-        if ($asset->categories && $asset->categories->isNotEmpty()) {
-            $categoryIds = $asset->categories->pluck('id');
-            $relatedAssets = Media::whereHas('categories', function($query) use ($categoryIds) {
-                    $query->whereIn('categories.id', $categoryIds);
-                })
-                ->where('media.id', '!=', $asset->id)
-                ->limit(10)
-                ->get();
+        if ($sharedCategories->isNotEmpty() && $sharedTags->isNotEmpty()) {
+            $relatedQuery = Media::where('media.id', '!=', $asset->id);
+
+            // Each category must be present on the related item.
+            foreach ($sharedCategories->pluck('id') as $catId) {
+                $relatedQuery->whereHas('categories', fn($q) => $q->where('categories.id', $catId));
+            }
+            // Each tag must be present on the related item.
+            foreach ($sharedTags->pluck('id') as $tagId) {
+                $relatedQuery->whereHas('tags', fn($q) => $q->where('tags.id', $tagId));
+            }
+
+            // Non-admins only see published related items.
+            if (!auth()->user()?->isAdmin()) {
+                $relatedQuery->where('status', 'published');
+            }
+
+            $relatedAssets = $relatedQuery->limit(10)->get();
         }
 
         $recent = session()->get('recently_viewed', []);
@@ -191,6 +311,8 @@ class MediaController extends Controller
         array_unshift($recent, $asset->id);
         session()->put('recently_viewed', array_slice($recent, 0, 5));
 
-        return view('users.show', compact('asset', 'relatedAssets', 'collectionName'));
+        return view('users.show', compact(
+            'asset', 'relatedAssets', 'collectionName', 'sharedCategories', 'sharedTags'
+        ));
     }
 }

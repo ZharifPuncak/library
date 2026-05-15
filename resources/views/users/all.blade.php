@@ -465,6 +465,13 @@
                                              class="w-full h-full {{ $hasRealThumb ? 'object-cover' : 'object-contain p-6 bg-white' }} group-hover:scale-105 transition-transform duration-500"
                                              loading="lazy"
                                              onerror="this.onerror=null; this.src='{{ $defaultThumb }}'; this.classList.remove('object-cover'); this.classList.add('object-contain','p-6','bg-white');">
+                                        @auth
+                                            @if(Auth::user()->isAdmin() && $asset->status !== 'published')
+                                                <span class="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider {{ $asset->status === 'archived' ? 'bg-slate-700 text-white' : 'bg-amber-500 text-white' }} shadow">
+                                                    {{ $asset->status }}
+                                                </span>
+                                            @endif
+                                        @endauth
                                     </div>
                                     <div class="mt-3 px-1">
                                         <h3 class="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-lib-sky transition-colors">{{ $asset->title }}</h3>
@@ -504,7 +511,16 @@
                                              onerror="this.onerror=null; this.src='{{ $defaultThumb }}'; this.classList.remove('object-cover'); this.classList.add('object-contain','p-1','bg-white');">
                                     </div>
                                     <div class="flex-grow min-w-0">
-                                        <h3 class="text-sm font-bold text-slate-800 truncate group-hover:text-lib-sky transition-colors">{{ $asset->title }}</h3>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-sm font-bold text-slate-800 truncate group-hover:text-lib-sky transition-colors">{{ $asset->title }}</h3>
+                                            @auth
+                                                @if(Auth::user()->isAdmin() && $asset->status !== 'published')
+                                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider {{ $asset->status === 'archived' ? 'bg-slate-700 text-white' : 'bg-amber-500 text-white' }} flex-shrink-0">
+                                                        {{ $asset->status }}
+                                                    </span>
+                                                @endif
+                                            @endauth
+                                        </div>
                                         <p class="text-xs text-slate-400 mt-0.5">{{ $typeLabel }} &middot; {{ $asset->created_at?->format('M j, Y') }}</p>
                                     </div>
                                     @if($asset->categories->isNotEmpty())

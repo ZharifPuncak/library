@@ -1,20 +1,40 @@
 @extends('layouts.app')
 
-@section('title', 'Add Media')
+@section('title', 'Edit Media')
 
 @section('content')
+@php
+    $currentType   = old('type', $media->type);
+    $currentSource = old('source', $media->file_url ? 'link' : 'upload');
+    $currentLoc    = old('location', $media->getDetail('location', ''));
+    $currentDate   = old('date', $media->date ? \Carbon\Carbon::parse($media->date)->format('Y-m-d') : '');
+    $currentCats   = array_map('intval', old('categories', $media->categories->pluck('id')->all()));
+    $currentTags   = array_map('intval', old('tags', $media->tags->pluck('id')->all()));
+@endphp
+
 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-    <div class="mb-6">
-        <a href="{{ route('media.index') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors">
+    <div class="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <a href="{{ route('media.show', $media) }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
             Back to media
         </a>
+
+        <form method="POST" action="{{ route('media.destroy', $media) }}"
+              onsubmit="return confirm('Delete this media item? This cannot be undone.');">
+            @csrf
+            @method('DELETE')
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 hover:bg-red-500 text-red-600 hover:text-white text-xs font-bold transition-colors border border-red-100 hover:border-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                Delete
+            </button>
+        </form>
     </div>
 
     <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-        <h1 class="text-xl font-bold text-lib-navy mb-1">Add Media</h1>
-        <p class="text-sm text-slate-500 mb-6">Upload a photo, video, or book to the library.</p>
+        <h1 class="text-xl font-bold text-lib-navy mb-1">Edit Media</h1>
+        <p class="text-sm text-slate-500 mb-6">Update details for <span class="font-semibold text-slate-700">{{ $media->title }}</span>.</p>
 
         @if($errors->any())
             <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3 text-sm mb-5">
@@ -25,18 +45,19 @@
         @endif
 
         @php
-            $floatInput    = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white placeholder-transparent transition-colors';
-            $floatLabel    = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky peer-focus:-top-2.5 peer-focus:left-3 peer-focus:text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:font-normal transition-all pointer-events-none';
-            $staticLabel   = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky pointer-events-none';
-            $floatSelect   = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white transition-colors appearance-none';
+            $floatInput  = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white placeholder-transparent transition-colors';
+            $floatLabel  = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky peer-focus:-top-2.5 peer-focus:left-3 peer-focus:text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:font-normal transition-all pointer-events-none';
+            $staticLabel = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky pointer-events-none';
+            $floatSelect = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white transition-colors appearance-none';
         @endphp
 
-        <form method="POST" action="{{ route('media.store') }}" enctype="multipart/form-data" class="space-y-7"
-              x-data="{ source: '{{ old('source', 'upload') }}', type: '{{ old('type', 'photo') }}' }">
+        <form method="POST" action="{{ route('media.update', $media) }}" enctype="multipart/form-data" class="space-y-7"
+              x-data="{ source: '{{ $currentSource }}', type: '{{ $currentType }}' }">
             @csrf
+            @method('PUT')
 
             <div class="relative">
-                <input id="title" type="text" name="title" value="{{ old('title') }}" required placeholder=" "
+                <input id="title" type="text" name="title" value="{{ old('title', $media->title) }}" required placeholder=" "
                        class="{{ $floatInput }}">
                 <label for="title" class="{{ $floatLabel }}">Title</label>
             </div>
@@ -54,11 +75,11 @@
                     </span>
                 </div>
                 <div class="relative">
-                    @php $status = old('status', 'draft'); @endphp
+                    @php $currentStatus = old('status', $media->status ?? 'draft'); @endphp
                     <select id="status" name="status" required class="{{ $floatSelect }}">
-                        <option value="draft"     {{ $status === 'draft'     ? 'selected' : '' }}>Draft</option>
-                        <option value="published" {{ $status === 'published' ? 'selected' : '' }}>Published</option>
-                        <option value="archived"  {{ $status === 'archived'  ? 'selected' : '' }}>Archived</option>
+                        <option value="draft"     {{ $currentStatus === 'draft'     ? 'selected' : '' }}>Draft</option>
+                        <option value="published" {{ $currentStatus === 'published' ? 'selected' : '' }}>Published</option>
+                        <option value="archived"  {{ $currentStatus === 'archived'  ? 'selected' : '' }}>Archived</option>
                     </select>
                     <label for="status" class="{{ $staticLabel }}">Status</label>
                     <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
@@ -66,7 +87,7 @@
                     </span>
                 </div>
                 <div class="relative">
-                    <input id="date" type="date" name="date" value="{{ old('date') }}" placeholder=" "
+                    <input id="date" type="date" name="date" value="{{ $currentDate }}" placeholder=" "
                            class="{{ $floatInput }}">
                     <label for="date" class="{{ $staticLabel }}">Date</label>
                 </div>
@@ -75,50 +96,45 @@
             <div class="rounded-2xl border border-slate-200 p-5">
                 <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Source</label>
 
-                {{-- Source toggle --}}
                 <div class="inline-flex rounded-full bg-slate-100 p-1 mb-4">
                     <button type="button" @click="source = 'upload'"
                             :class="source === 'upload' ? 'bg-white text-lib-navy shadow' : 'text-slate-500 hover:text-lib-navy'"
-                            class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
-                        Upload file
-                    </button>
+                            class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors">Upload file</button>
                     <button type="button" @click="source = 'link'"
                             :class="source === 'link' ? 'bg-white text-lib-navy shadow' : 'text-slate-500 hover:text-lib-navy'"
-                            class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors">
-                        Use link
-                    </button>
+                            class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors">Use link</button>
                 </div>
                 <input type="hidden" name="source" x-model="source">
 
-                {{-- Upload mode --}}
                 <div x-show="source === 'upload'" x-cloak>
-                    <input id="file" type="file" name="file" :required="source === 'upload'"
+                    @if($media->file_path)
+                        <p class="text-xs text-slate-500 mb-2">
+                            Current file: <span class="font-semibold text-slate-700">{{ basename($media->file_path) }}</span>
+                        </p>
+                    @endif
+                    <input id="file" type="file" name="file"
                            class="w-full text-sm text-slate-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-lib-light file:text-lib-navy hover:file:bg-lib-sky hover:file:text-white transition-colors">
-                    <p class="text-xs text-slate-400 mt-1.5">Max 50 MB. Photos as image, videos as MP4, books as PDF.</p>
+                    <p class="text-xs text-slate-400 mt-1.5">Leave empty to keep the existing file. Max 50 MB.</p>
                 </div>
 
-                {{-- Link mode --}}
                 <div x-show="source === 'link'" x-cloak>
                     <div class="relative">
-                        <input id="file_url" type="url" name="file_url" value="{{ old('file_url') }}"
+                        <input id="file_url" type="url" name="file_url" value="{{ old('file_url', $media->file_url) }}"
                                :required="source === 'link'"
                                placeholder=" "
                                class="{{ $floatInput }}">
                         <label for="file_url" class="{{ $floatLabel }}">File URL</label>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1.5">Paste a direct URL to a hosted file (image, video, or PDF).</p>
+                    <p class="text-xs text-slate-400 mt-1.5">Paste a direct URL to a hosted file.</p>
                 </div>
             </div>
 
-            {{-- Book-only: physical/shelf location --}}
             <div x-show="type === 'ebook'" x-cloak>
                 <div class="relative">
-                    <input id="location" type="text" name="location" value="{{ old('location') }}" maxlength="255"
+                    <input id="location" type="text" name="location" value="{{ $currentLoc }}" maxlength="255"
                            placeholder=" "
                            class="{{ $floatInput }}">
-                    <label for="location" class="{{ $floatLabel }}">
-                        Location <span class="font-normal text-slate-400">(optional)</span>
-                    </label>
+                    <label for="location" class="{{ $floatLabel }}">Location <span class="font-normal text-slate-400">(optional)</span></label>
                 </div>
                 <p class="text-xs text-slate-400 mt-1.5">Where the physical copy is shelved, if applicable.</p>
             </div>
@@ -127,26 +143,30 @@
                 <label for="thumbnail" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
                     Thumbnail <span class="font-normal normal-case text-slate-400">(optional)</span>
                 </label>
+                @if($media->thumbnail_path)
+                    <div class="flex items-center gap-3 mb-3">
+                        <img src="{{ asset('storage/' . $media->thumbnail_path) }}" alt="Current thumbnail"
+                             class="w-14 h-14 rounded-xl object-cover border border-slate-200">
+                        <span class="text-xs text-slate-500">Current thumbnail</span>
+                    </div>
+                @endif
                 <input id="thumbnail" type="file" name="thumbnail" accept="image/*"
                        class="w-full text-sm text-slate-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200 transition-colors">
-                <p class="text-xs text-slate-400 mt-1.5">Cover image shown in listings. Max 1 MB.</p>
+                <p class="text-xs text-slate-400 mt-1.5">Leave empty to keep the existing image. Max 1 MB.</p>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 p-5" x-data="{ selected: @js(array_map('intval', old('categories', []))) }">
+            <div class="rounded-2xl border border-slate-200 p-5" x-data="{ selected: @js($currentCats) }">
                 <div class="flex items-center justify-between mb-3">
                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                         Categories <span class="font-normal normal-case text-slate-400">(select one or more)</span>
                     </label>
-                    <span class="text-[10px] font-bold text-slate-400">
-                        <span x-text="selected.length"></span> selected
-                    </span>
+                    <span class="text-[10px] font-bold text-slate-400"><span x-text="selected.length"></span> selected</span>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($categories as $cat)
                         <label class="cursor-pointer">
                             <input type="checkbox" name="categories[]" value="{{ $cat->id }}"
-                                   x-model.number="selected"
-                                   class="peer hidden">
+                                   x-model.number="selected" class="peer hidden">
                             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200 peer-checked:bg-lib-navy peer-checked:text-white peer-checked:border-lib-navy hover:border-lib-sky transition-colors">
                                 <svg x-show="selected.includes({{ $cat->id }})" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                                 {{ $cat->name }}
@@ -157,21 +177,18 @@
             </div>
 
             @if($tags->isNotEmpty())
-                <div class="rounded-2xl border border-slate-200 p-5" x-data="{ selected: @js(array_map('intval', old('tags', []))) }">
+                <div class="rounded-2xl border border-slate-200 p-5" x-data="{ selected: @js($currentTags) }">
                     <div class="flex items-center justify-between mb-3">
                         <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">
                             Tags <span class="font-normal normal-case text-slate-400">(select one or more)</span>
                         </label>
-                        <span class="text-[10px] font-bold text-slate-400">
-                            <span x-text="selected.length"></span> selected
-                        </span>
+                        <span class="text-[10px] font-bold text-slate-400"><span x-text="selected.length"></span> selected</span>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         @foreach($tags as $tag)
                             <label class="cursor-pointer">
                                 <input type="checkbox" name="tags[]" value="{{ $tag->id }}"
-                                       x-model.number="selected"
-                                       class="peer hidden">
+                                       x-model.number="selected" class="peer hidden">
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-50 text-slate-600 border border-slate-200 peer-checked:bg-lib-sky peer-checked:text-white peer-checked:border-lib-sky hover:border-lib-sky transition-colors">
                                     <svg x-show="selected.includes({{ $tag->id }})" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                                     #{{ $tag->name }}
@@ -183,11 +200,11 @@
             @endif
 
             <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-                <a href="{{ route('media.index') }}"
+                <a href="{{ route('media.show', $media) }}"
                    class="px-5 py-2.5 rounded-full text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</a>
                 <button type="submit"
                         class="px-6 py-2.5 rounded-full bg-lib-navy hover:bg-lib-sky text-white text-sm font-bold transition-colors shadow-md">
-                    Upload media
+                    Save changes
                 </button>
             </div>
         </form>

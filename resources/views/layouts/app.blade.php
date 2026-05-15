@@ -114,10 +114,11 @@
 
     <!-- Page Nav Pills: Media / Users (admin only, sticky below header — hidden on home) -->
     @auth
-        @if(Auth::user()->isAdmin() && !request()->routeIs('home'))
+        @if(Auth::user()->isAdmin() && !request()->routeIs('home') && !request()->routeIs('media.show'))
             @php
-                $mediaActive = request()->routeIs('media.*') || request()->routeIs('collections.*');
-                $usersActive = request()->routeIs('users.*');
+                $mediaActive     = request()->routeIs('media.*') || request()->routeIs('collections.*');
+                $usersActive     = request()->routeIs('users.*');
+                $slideshowActive = request()->routeIs('slideshow.*');
             @endphp
             <div class="sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
                 <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -131,6 +132,11 @@
                            class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $usersActive ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             Users
+                        </a>
+                        <a href="{{ route('slideshow.index') }}"
+                           class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $slideshowActive ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            Slideshow
                         </a>
                     </nav>
                 </div>
