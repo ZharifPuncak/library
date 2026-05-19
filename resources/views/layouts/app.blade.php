@@ -52,7 +52,7 @@
     <header class="sticky top-0 z-50 shadow-lg">
         <!-- Top Bar: Logo & User Info -->
         <div class="bg-lib-navy text-white border-b border-white/5">
-            <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="w-full px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16 md:h-20">
                     <!-- Logo Section (Original Style) -->
                     <div class="flex-shrink-0 flex items-center">
@@ -138,57 +138,102 @@
                 $activeNav = collect($navLinks)->firstWhere('active', true);
             @endphp
 
-            <div class="sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
-                <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-                    {{-- Desktop: full pill row --}}
-                    <nav class="hidden md:flex justify-start items-center gap-2 h-14">
-                        @foreach($navLinks as $link)
-                            <a href="{{ $link['route'] }}"
-                               class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-colors {{ $link['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'bg-white text-slate-600 border border-slate-200 hover:border-lib-navy hover:text-lib-navy' }}">
-                                {!! $link['icon'] !!}
-                                {{ $link['label'] }}
-                            </a>
-                        @endforeach
-                    </nav>
+            <div class="flex-grow flex flex-col"
+                 x-data="{
+                    collapsed: localStorage.getItem('adminSidebarCollapsed') === '1',
+                    mobileOpen: false,
+                    toggle() {
+                        this.collapsed = !this.collapsed;
+                        localStorage.setItem('adminSidebarCollapsed', this.collapsed ? '1' : '0');
+                    }
+                 }">
 
-                    {{-- Mobile: right-aligned Actions dropdown --}}
-                    <div class="md:hidden flex justify-end items-center h-14 relative"
-                         x-data="{ actionsOpen: false }"
-                         @click.outside="actionsOpen = false"
-                         @keydown.escape.window="actionsOpen = false">
-                        <button type="button" @click="actionsOpen = !actionsOpen"
-                                class="inline-flex items-center gap-1.5 text-sm font-bold text-lib-navy hover:text-lib-sky transition-colors">
-                            <span>{{ $activeNav['label'] ?? 'Actions' }}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                 class="h-4 w-4 transition-transform"
-                                 :class="actionsOpen ? 'rotate-180' : ''">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-
-                        <div x-show="actionsOpen" x-cloak
-                             x-transition:enter="transition ease-out duration-150"
-                             x-transition:enter-start="opacity-0 -translate-y-1"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             class="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
-                            @foreach($navLinks as $link)
-                                <a href="{{ $link['route'] }}"
-                                   class="flex items-center gap-3 px-4 py-3 text-sm font-semibold border-b border-slate-100 last:border-b-0 transition-colors {{ $link['active'] ? 'bg-lib-light text-lib-navy' : 'text-slate-600 hover:bg-slate-50 hover:text-lib-navy' }}">
-                                    {!! $link['icon'] !!}
-                                    {{ $link['label'] }}
-                                </a>
-                            @endforeach
+                {{-- Mobile top strip: hamburger on the left --}}
+                <div class="md:hidden sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
+                    <div class="max-w-[1400px] mx-auto px-4 sm:px-6">
+                        <div class="flex justify-start items-center h-14">
+                            <button type="button" @click="mobileOpen = true"
+                                    class="inline-flex items-center gap-1.5 text-sm font-bold text-lib-navy hover:text-lib-sky transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                                {{ $activeNav['label'] ?? 'Menu' }}
+                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
-        @endif
-    @endauth
 
-    <!-- Main Content -->
-    <main class="flex-grow">
-        @yield('content')
-    </main>
+                {{-- Mobile offcanvas --}}
+                <div x-show="mobileOpen" x-cloak class="md:hidden fixed inset-0 z-[60]"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100">
+                    <div class="absolute inset-0 bg-slate-900/40" @click="mobileOpen = false"></div>
+                    <aside class="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-2xl flex flex-col"
+                           x-transition:enter="transition ease-out duration-200"
+                           x-transition:enter-start="-translate-x-full"
+                           x-transition:enter-end="translate-x-0">
+                        <div class="flex items-center justify-between px-4 h-16 border-b border-slate-100">
+                            <span class="text-sm font-bold text-lib-navy">Admin</span>
+                            <button type="button" @click="mobileOpen = false"
+                                    class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-lib-navy transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+                            @foreach($navLinks as $link)
+                                <a href="{{ $link['route'] }}"
+                                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ $link['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-600 hover:bg-slate-50 hover:text-lib-navy' }}">
+                                    {!! $link['icon'] !!}
+                                    <span>{{ $link['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </nav>
+                    </aside>
+                </div>
+
+                {{-- Desktop fixed sidebar --}}
+                <aside class="hidden md:flex flex-col fixed left-0 top-16 md:top-20 bottom-0 z-30 bg-white border-r border-slate-200 transition-all duration-200"
+                       :class="collapsed ? 'w-16' : 'w-56'">
+                    <div class="flex items-center px-3 py-3 border-b border-slate-100"
+                         :class="collapsed ? 'justify-center' : 'justify-between'">
+                        <span x-show="!collapsed" x-transition.opacity
+                              class="text-[10px] font-black uppercase tracking-widest text-slate-400">Admin Menu</span>
+                        <button type="button" @click="toggle"
+                                class="p-1.5 rounded-lg text-slate-400 hover:text-lib-navy hover:bg-slate-100 transition-colors"
+                                :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4 transition-transform"
+                                 :class="collapsed ? 'rotate-180' : ''">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <nav class="flex-1 px-2 pt-3 space-y-1.5 overflow-y-auto">
+                        @foreach($navLinks as $link)
+                            <a href="{{ $link['route'] }}"
+                               class="flex items-center gap-3 rounded-xl text-sm font-semibold transition-colors {{ $link['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-600 hover:bg-slate-50 hover:text-lib-navy' }}"
+                               :class="collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'"
+                               :title="@js($link['label'])">
+                                {!! $link['icon'] !!}
+                                <span x-show="!collapsed" x-transition.opacity>{{ $link['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+                </aside>
+
+                {{-- Main content: shifts right on md+ to make room for the sidebar --}}
+                <main class="flex-grow flex flex-col transition-all duration-200"
+                      :class="{ 'md:pl-56': !collapsed, 'md:pl-16': collapsed }">
+                    <div class="flex-grow">
+                        @yield('content')
+                    </div>
+                </main>
+            </div>
+        @else
+            <main class="flex-grow">@yield('content')</main>
+        @endif
+    @else
+        <main class="flex-grow">@yield('content')</main>
+    @endauth
 
     <!-- Footer -->
     <footer class="bg-lib-navy text-white py-6">

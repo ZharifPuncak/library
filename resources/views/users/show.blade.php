@@ -27,7 +27,7 @@
 @endphp
 
 <div class="bg-slate-50 min-h-[calc(100vh-5rem)]">
-    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
 
         {{-- Top bar: Back + Title --}}
         <div class="flex flex-wrap items-center gap-4 mb-6">

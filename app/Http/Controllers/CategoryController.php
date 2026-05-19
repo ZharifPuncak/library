@@ -58,6 +58,13 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        if ($category->media()->exists()) {
+            return back()->with(
+                'error',
+                "Cannot delete \"{$category->name}\" — it's still assigned to one or more media items."
+            );
+        }
+
         $category->delete();
 
         return redirect()

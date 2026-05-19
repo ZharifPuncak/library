@@ -59,6 +59,47 @@ class Media extends Model
         return $this->file_path ? asset('storage/' . $this->file_path) : null;
     }
 
+    /**
+     * Best-effort thumbnail URL, falling back to the default project logo.
+     * Priority: explicit thumbnail_path → photo's own source → default logo.
+     */
+    public function getThumbnailUrlAttribute(): string
+    {
+        $default = asset('images/logo.png');
+
+        if (!empty($this->thumbnail_path)) {
+            return asset('storage/' . $this->thumbnail_path);
+        }
+        if (strtolower((string) $this->type) === 'photo') {
+            if (!empty($this->file_url))  return $this->file_url;
+            if (!empty($this->file_path)) return asset('storage/' . $this->file_path);
+        }
+        return $default;
+    }
+
+    /**
+     * True when the row has a real cover image (not the logo fallback).
+     */
+    public function getHasRealThumbnailAttribute(): bool
+    {
+        return $this->thumbnail_path
+            || (strtolower((string) $this->type) === 'photo' && ($this->file_url || $this->file_path));
+    }
+
+    /** Scope: only published rows (for non-admin listings). */
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
+    }
+
+    /** Scope: rows that belong to a given collection name. */
+    public function scopeInCollection($query, string $name)
+    {
+        return $query->whereHas('details', fn($q) =>
+            $q->where('key', 'collection')->where('value', $name)
+        );
+    }
+
     public function details()
     {
         return $this->hasMany(MediaDetail::class, 'media_id');

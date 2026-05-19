@@ -58,6 +58,13 @@ class TagController extends Controller
 
     public function destroy(Tag $tag)
     {
+        if ($tag->media()->exists()) {
+            return back()->with(
+                'error',
+                "Cannot delete \"#{$tag->name}\" — it's still assigned to one or more media items."
+            );
+        }
+
         $tag->delete();
 
         return redirect()

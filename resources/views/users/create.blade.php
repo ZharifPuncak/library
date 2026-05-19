@@ -3,7 +3,7 @@
 @section('title', 'Add Media')
 
 @section('content')
-<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
 
     <div class="mb-6">
         <a href="{{ route('media.index') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors">

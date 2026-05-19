@@ -3,11 +3,17 @@
 @section('title', 'Tags')
 
 @section('content')
-<div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
 
     @if(session('status'))
         <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl text-sm font-medium">
             {{ session('status') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -94,13 +100,19 @@
                                     <div class="inline-flex items-center gap-1" x-show="!editing">
                                         <button type="button" @click="editing = true"
                                                 class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-lib-navy transition-colors">Edit</button>
-                                        <form action="{{ route('tags.destroy', $tag) }}" method="POST"
-                                              onsubmit="return confirm('Delete this tag?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">Delete</button>
-                                        </form>
+                                        @if($tag->media_count > 0)
+                                            <button type="button" disabled
+                                                    title="This tag is still assigned to {{ $tag->media_count }} media {{ Str::plural('item', $tag->media_count) }}."
+                                                    class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 cursor-not-allowed">Delete</button>
+                                        @else
+                                            <form action="{{ route('tags.destroy', $tag) }}" method="POST"
+                                                  onsubmit="return confirm('Delete this tag?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">Delete</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
