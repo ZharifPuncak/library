@@ -4,13 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
-        Schema::create('asset_details', function (Blueprint $table) {
+        Schema::create('media_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('asset_id')->constrained('assets')->onDelete('cascade');
-            $table->string('key');   // e.g. isbn, author, resolution, duration
+            $table->foreignId('media_id')->constrained('media')->cascadeOnDelete();
+            $table->string('key');
             $table->text('value')->nullable();
             $table->timestamps();
         });
@@ -18,6 +19,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('asset_details');
+        Schema::dropIfExists('media_details');
     }
 };
