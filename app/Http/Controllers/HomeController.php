@@ -5,20 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Media;
 
-use App\Models\Slideshow;
+use App\Models\Slider;
 
 class HomeController extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
+
         // Ambil hero photo terbaru (atau tandakan khusus jika ada is_hero)
-       $hero = Media::where('type', 'Photo')
-                 ->latest('created_at')
-                 ->first();
+       $hero = Media::visibleTo($user)
+                  ->whereRaw('LOWER(type) = ?', ['photo'])
+                  ->latest('created_at')
+                  ->first();
 
-        $slideshows = Slideshow::latest()->get();
+        $sliders = Slider::latest()->get();
 
-        $mostViewed = Media::join('media_details', 'media.id', '=', 'media_details.media_id')
+        $mostViewed = Media::visibleTo($user)
+            ->join('media_details', 'media.id', '=', 'media_details.media_id')
             ->where('media_details.key', 'views')
             ->where('media_details.value', '>', 5)
             ->select('media.*', 'media_details.value as views_count')
@@ -28,7 +32,8 @@ class HomeController extends Controller
             ->get();
 
         $recentlyViewedIds = session()->get('recently_viewed', []);
-        $recentlyViewed = Media::whereIn('id', $recentlyViewedIds)
+        $recentlyViewed = Media::visibleTo($user)
+            ->whereIn('id', $recentlyViewedIds)
             ->with(['categories', 'tags'])
             ->get()
             ->sortBy(function($media) use ($recentlyViewedIds) {
@@ -36,10 +41,10 @@ class HomeController extends Controller
             });
 
         // Check if logged-in user is admin
-        $isAdmin = auth()->check() ? auth()->user()->isAdmin() : false;
+        $isAdmin = $user?->isAdmin() ?? false;
 
         $categories = \App\Models\Category::all();
 
-        return view('home', compact('hero', 'isAdmin', 'slideshows', 'mostViewed', 'categories', 'recentlyViewed'));
+        return view('home', compact('hero', 'isAdmin', 'sliders', 'mostViewed', 'categories', 'recentlyViewed'));
     }
 }

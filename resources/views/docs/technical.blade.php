@@ -42,13 +42,13 @@
     The Library Portal is a digital media management platform that lets staff curate and publish a collection of photographs,
     videos and books (PDFs / Office docs), surface them to authenticated viewers through a fast browse-and-search interface,
     and group items into named collections. It also includes a personal "My&nbsp;List" feature, a VR tour module, and an
-    administrative back-office for users, categories, tags, and a hero slideshow.
+    administrative back-office for users, categories, tags, and a hero slider.
 </p>
 
 <h3>Primary actors</h3>
 <table>
     <tr><th>Role</th><th>Capabilities</th></tr>
-    <tr><td><span class="pill pill-navy">Admin</span></td><td>Full CRUD on media, collections, categories, tags, slideshow and users. Sees all draft/published/archived rows.</td></tr>
+    <tr><td><span class="pill pill-navy">Admin</span></td><td>Full CRUD on media, collections, categories, tags, slider and users. Sees all draft/published/archived rows.</td></tr>
     <tr><td><span class="pill pill-slate">User</span></td><td>Browse published media, view details, save items + collections to a personal "My&nbsp;List", change own password.</td></tr>
     <tr><td>Guest</td><td>Land on the marketing home page and reach the login screen. No media access.</td></tr>
 </table>
@@ -71,10 +71,10 @@
 <pre>
 app/
 ├── Http/
-│   ├── Controllers/        — 11 controllers (Media, Collection, MyList, User, Category, Tag, Slideshow, Profile, Home, Login, Vr)
+│   ├── Controllers/        — 11 controllers (Media, Collection, MyList, User, Category, Tag, Slider, Profile, Home, Login, Vr)
 │   ├── Middleware/         — RedirectIfAuthenticated, PreventBackHistory, ...
 │   └── Kernel.php          — middleware aliases
-├── Models/                 — Media, Collection, MediaDetail, Category, Tag, Slideshow, User
+├── Models/                 — Media, Collection, MediaDetail, Category, Tag, Slider, User
 └── Providers/
 
 database/
@@ -90,7 +90,7 @@ resources/views/
 ├── collections/            — (legacy, see users/collections)
 ├── categories/index.blade.php
 ├── tags/index.blade.php
-├── slideshow/index.blade.php
+├── slider/index.blade.php
 ├── profile/edit.blade.php
 └── docs/                   — PDF templates (this file)
 
@@ -153,7 +153,7 @@ routes/web.php              — all routes (no API routes used)
     <tr><td>categories</td><td>id, name, timestamps</td></tr>
     <tr><td>tags</td><td>id, name, timestamps</td></tr>
     <tr><td>collections</td><td>id, uuid (unique), name (unique), timestamps</td></tr>
-    <tr><td>slideshows</td><td>id, title, slideshow_pic, timestamps</td></tr>
+    <tr><td>sliders</td><td>id, title, slider_pic, timestamps</td></tr>
 </table>
 
 <div class="callout">
@@ -168,7 +168,7 @@ routes/web.php              — all routes (no API routes used)
 <h3>Media (app/Models/Media.php)</h3>
 <ul>
     <li><strong>Constants</strong>: <code>Media::STATUSES = ['draft', 'published', 'archived']</code>.</li>
-    <li><strong>Route key</strong>: <code>uuid</code> — Media URLs use <code>/media/{uuid}</code>.</li>
+    <li><strong>Route key</strong>: <code>uuid</code> — Collection URLs use <code>/collections/{uuid}</code>.</li>
     <li><strong>Auto UUID</strong>: <code>booted()</code> assigns <code>uuid</code> on create if not supplied.</li>
     <li><strong>Accessors</strong>:
         <ul>
@@ -216,15 +216,11 @@ routes/web.php              — all routes (no API routes used)
 <h3>Authenticated routes</h3>
 <table>
     <tr><th>Method &amp; path</th><th>Name</th><th>Purpose</th></tr>
-    <tr><td>GET /media</td><td>media.index</td><td>Filtered/paginated browse</td></tr>
-    <tr><td>GET /media/{media}</td><td>media.show</td><td>Single media + viewer + related items</td></tr>
-    <tr><td>GET /media/create, POST /media</td><td>media.create / .store</td><td>Admin only</td></tr>
-    <tr><td>GET /media/{media}/edit, PUT /media/{media}</td><td>media.edit / .update</td><td>Admin only</td></tr>
-    <tr><td>DELETE /media/{media}</td><td>media.destroy</td><td>Admin only</td></tr>
-    <tr><td>GET /collections (+ create/show/edit/update/destroy/download)</td><td>collections.*</td><td>UUID-bound routes</td></tr>
+    <tr><td>GET /collections</td><td>media.index</td><td>Filtered/paginated browse</td></tr>
+    <tr><td>GET /collections (+ create/show/edit/update/destroy/download)</td><td>collections.*</td><td>Collection-centric add/edit (multi-file upload, shared metadata). UUID-bound. Admin-gated for CUD.</td></tr>
     <tr><td>GET /my-list, /my-list/add, POST /my-list/sync</td><td>mylist.*</td><td>Per-user saved items</td></tr>
     <tr><td>GET /users, ... (CRUD)</td><td>users.*</td><td>Admin only</td></tr>
-    <tr><td>GET /categories, /tags, /slideshow (+ CRUD)</td><td></td><td>Admin only</td></tr>
+    <tr><td>GET /categories, /tags, /slider (+ CRUD)</td><td></td><td>Admin only</td></tr>
     <tr><td>GET /profile, PUT /profile/password</td><td>profile.*</td><td>Own password change</td></tr>
     <tr><td>GET /vr, /vr-test</td><td>vr.*</td><td>VR tour module</td></tr>
 </table>
@@ -274,13 +270,13 @@ public function __construct()
     <tr><th>What</th><th>Where</th><th>Cap</th></tr>
     <tr><td>Media files (uploaded)</td><td><code>storage/app/public/media</code></td><td>50 MB</td></tr>
     <tr><td>Thumbnails</td><td><code>storage/app/public/media/thumbnails</code></td><td>1 MB</td></tr>
-    <tr><td>Slideshow images</td><td><code>storage/app/public/slideshows</code></td><td>2 MB</td></tr>
+    <tr><td>Slider images</td><td><code>storage/app/public/sliders</code></td><td>25 MB</td></tr>
     <tr><td>Collection ZIP exports</td><td><code>storage/app</code> (temp, deleted after send)</td><td>—</td></tr>
 </table>
 <p>Allowed file types are scoped by the chosen media type:</p>
 <table>
     <tr><th>Media type</th><th>Allowed extensions</th></tr>
-    <tr><td>photo</td><td>jpg, jpeg, png, gif, webp, bmp, svg</td></tr>
+    <tr><td>photo</td><td>jpg, jpeg, png, gif, webp, bmp</td></tr>
     <tr><td>video</td><td>mp4, webm, mov, avi, mkv, m4v</td></tr>
     <tr><td>ebook</td><td>pdf, doc, docx, xls, xlsx</td></tr>
 </table>
@@ -308,14 +304,15 @@ php artisan serve
     <tr><th>Field</th><th>Default</th><th>Override</th></tr>
     <tr><td>Username</td><td><code>admin</code></td><td><code>SEED_ADMIN_USERNAME</code></td></tr>
     <tr><td>Email</td><td><code>admin@example.com</code></td><td><code>SEED_ADMIN_EMAIL</code></td></tr>
-    <tr><td>Password</td><td><code>Pnhb@12345</code></td><td><code>SEED_ADMIN_PASSWORD</code></td></tr>
+    <tr><td>Password</td><td><em>Set per deployment</em></td><td><code>SEED_ADMIN_PASSWORD</code> is required in production</td></tr>
 </table>
 
 <div class="callout danger">
     <strong>Production checklist:</strong>
     <ul>
         <li>Change the default admin password immediately after first login.</li>
-        <li>Set <code>APP_ENV=production</code>, <code>APP_DEBUG=false</code> in <code>.env</code>.</li>
+        <li>Set <code>APP_ENV=production</code>, <code>APP_DEBUG=false</code>, <code>APP_URL=https://...</code>, and <code>SESSION_SECURE_COOKIE=true</code> in <code>.env</code>.</li>
+        <li>Install production dependencies with <code>composer install --no-dev --optimize-autoloader</code>.</li>
         <li>Run <code>php artisan config:cache</code>, <code>route:cache</code>, <code>view:cache</code>.</li>
         <li>Ensure <code>storage/</code> and <code>bootstrap/cache/</code> are writable by the web server.</li>
         <li>Configure a real session store (Redis or DB) if running multiple app servers.</li>
@@ -344,7 +341,7 @@ php artisan serve
     <li><strong>Categories &amp; tags</strong>: Cannot be deleted while still attached to any media — the controller refuses and the UI greys out the Delete button.</li>
     <li><strong>Collections deletion</strong>: Removes the <code>media_details</code> rows linking media to the collection, then deletes the collection. The media files themselves are not touched.</li>
     <li><strong>Sidebar state</strong>: Collapsed/expanded saved to <code>localStorage</code> key <code>adminSidebarCollapsed</code>.</li>
-    <li><strong>View persistence</strong>: Grid/list toggle on <code>/media</code> stored in cookie <code>media_view</code> for 30 days.</li>
+    <li><strong>View persistence</strong>: Grid/list toggle on <code>/collections</code> stored in cookie <code>media_view</code> for 30 days.</li>
 </ul>
 
 <div class="footer-note">

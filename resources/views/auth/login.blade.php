@@ -18,6 +18,7 @@
                         'lib-navy': '#003865',
                         'lib-blue': '#1d6a99',
                         'lib-sky':  '#0ea5e9',
+                        'lib-light': '#f0f7ff',
                     },
                     fontFamily: { 'sans': ['Inter', 'system-ui', 'sans-serif'] }
                 }
@@ -30,13 +31,13 @@
     </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-6 bg-lib-blue">
+<body class="min-h-screen flex items-center justify-center p-6 bg-lib-light">
 
     <div class="w-full max-w-sm">
 
         {{-- Logo above card --}}
         <div class="flex justify-center -mb-12 relative z-10">
-            <div class="bg-white rounded-full p-3 shadow-xl">
+            <div class="bg-white rounded-full p-3 shadow-sm border border-slate-100">
                 <img src="{{ asset('images/logo.png') }}" alt="Puncak Niaga"
                      class="h-20 w-20 object-contain"
                      onerror="this.style.display='none'">
@@ -44,7 +45,7 @@
         </div>
 
         {{-- Card --}}
-        <div class="bg-white rounded-2xl shadow-2xl pt-16 pb-8 px-8">
+        <div class="bg-white rounded-lg shadow-sm border border-slate-100 pt-16 pb-8 px-8">
 
             <h1 class="text-center text-xl font-semibold text-slate-800 mb-6">E-Library Login</h1>
 
@@ -86,14 +87,14 @@
 
                 {{-- Login button --}}
                 <button type="submit"
-                        class="w-full bg-lib-blue hover:bg-lib-navy text-white font-semibold py-2.5 rounded-md transition-colors mt-2">
+                        class="w-full px-4 py-2 bg-lib-blue hover:bg-lib-navy text-white text-xs font-bold rounded-md transition-colors mt-2">
                     Login
                 </button>
 
                 {{-- Forgot --}}
                 @if (Route::has('password.request'))
                     <a href="{{ route('password.request') }}"
-                       class="block w-full text-center border border-slate-300 hover:border-lib-blue hover:text-lib-blue text-slate-600 font-medium py-2 rounded-md transition-colors text-sm">
+                       class="block w-full px-4 py-2 text-center border border-slate-300 hover:border-lib-blue hover:text-lib-blue text-slate-600 text-xs font-bold rounded-md transition-colors">
                         Forgot Password
                     </a>
                 @endif
@@ -102,14 +103,14 @@
 
         <div class="mt-5 text-center">
             <a href="{{ route('home') }}"
-               class="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-semibold transition-colors">
+                class="inline-flex items-center gap-1.5 text-slate-500 hover:text-lib-navy text-xs font-semibold transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 Return to home
             </a>
         </div>
 
-        <p class="text-center text-white/70 text-xs mt-6">
-            &copy; {{ date('Y') }} Puncak Niaga Library Portal
+        <p class="text-center text-slate-400 text-xs mt-6">
+            &copy; {{ date('Y') }} ICTD
         </p>
     </div>
 

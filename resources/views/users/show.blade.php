@@ -56,8 +56,8 @@
                         ? asset('storage/' . $asset->thumbnail_path)
                         : ($type === 'photo' && $fileUrl ? $fileUrl : null);
                 @endphp
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-4 flex items-center gap-5">
-                    <div class="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0 rounded-2xl overflow-hidden bg-slate-100 border border-slate-100">
+                <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6 mb-4 flex items-center gap-5">
+                    <div class="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100 border border-slate-100">
                         @if($thumbUrl)
                             <img id="mainThumb" src="{{ $thumbUrl }}" alt="{{ $asset->title }}"
                                  class="w-full h-full object-cover"
@@ -75,15 +75,19 @@
                         <span class="inline-flex items-center px-2.5 py-1 mt-2 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
                             {{ $typeLabel }}
                         </span>
+                        @if(filled($asset->description))
+                            <p class="mt-3 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{{ $asset->description }}</p>
+                        @endif
                     </div>
                 </div>
 
-                <div id="fullscreenContainer" class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div id="fullscreenContainer" class="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
 
                     <style>
                         #fullscreenContainer:fullscreen { background: #000; padding: 1rem; }
                         #fullscreenContainer:fullscreen .viewer { height: 100vh; max-height: 100vh; padding: 0; background: transparent; }
                         #fullscreenContainer:fullscreen #mainImage { max-height: 90vh; max-width: 95vw; }
+                        #fullscreenContainer:fullscreen #mainVideoWrap { height: 100vh; }
                         #fullscreenContainer:fullscreen #ebookFrame { height: 100vh; }
                     </style>
 
@@ -102,10 +106,10 @@
                              class="w-full h-auto object-cover {{ in_array($type, ['photo', 'image'], true) ? 'block' : 'hidden' }}">
 
                         {{-- Video --}}
-                        <div class="{{ $type === 'video' ? 'block' : 'hidden' }} bg-slate-50 flex items-center justify-center p-4 min-h-[480px]">
+                        <div id="mainVideoWrap" class="{{ $type === 'video' ? 'block' : 'hidden' }} bg-black aspect-video w-full overflow-hidden">
                             <video id="mainVideo" src="{{ $type === 'video' ? $fileUrl : '' }}"
                                    controls
-                                   class="max-w-full max-h-[480px] rounded-xl"></video>
+                                   class="w-full h-full object-contain"></video>
                         </div>
 
                         {{-- Ebook (PDF) --}}
@@ -125,7 +129,7 @@
             <aside class="lg:col-span-4 space-y-4">
 
                 {{-- Metadata card --}}
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6">
                     <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Details</h2>
 
                     @php
@@ -143,7 +147,7 @@
                         <div class="flex items-start justify-between gap-3">
                             <dt class="text-slate-500 font-medium">Status</dt>
                             <dd>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider {{ $statusClasses }}">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $statusClasses }}">
                                     {{ ucfirst($asset->status ?? 'draft') }}
                                 </span>
                             </dd>
@@ -179,12 +183,12 @@
 
                 {{-- Categories --}}
                 @if($asset->categories && $asset->categories->isNotEmpty())
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Categories</h2>
                         <div class="flex flex-wrap gap-2">
                             @foreach($asset->categories as $category)
                                 <a href="{{ route('media.index', ['categories' => [$category->id]]) }}"
-                                   class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-lib-navy hover:text-white hover:border-lib-navy transition-colors">
+                                   class="inline-flex items-center px-4 py-2 rounded-full text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-lib-navy hover:text-white hover:border-lib-navy transition-colors">
                                     {{ $category->name }}
                                 </a>
                             @endforeach
@@ -194,7 +198,7 @@
 
                 {{-- Tags --}}
                 @if($asset->tags && $asset->tags->isNotEmpty())
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Tags</h2>
                         <div class="flex flex-wrap gap-1.5">
                             @foreach($asset->tags as $tag)
@@ -209,10 +213,10 @@
 
                 {{-- Collections --}}
                 @if(isset($collectionName) && $collectionName)
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Collection</h2>
                         <a href="{{ route('collections.show', $collection ?? $collectionName) }}"
-                           class="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-lib-light text-lib-navy hover:bg-lib-sky hover:text-white text-sm font-bold transition-colors">
+                           class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-lib-light text-lib-navy hover:bg-lib-sky hover:text-white text-xs font-bold transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                             {{ $collectionName }}
                         </a>
@@ -231,19 +235,19 @@
                     $showActions  = $canDownload || $isAdmin || auth()->check();
                 @endphp
                 @if($showActions)
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Actions</h2>
                         <div class="flex flex-col gap-2">
-                            @if($isAdmin)
-                                <a href="{{ route('media.edit', $asset) }}"
-                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
+                            @if($isAdmin && !empty($collection))
+                                <a href="{{ route('collections.edit', $collection) }}"
+                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    Edit Media
+                                    Edit Collection
                                 </a>
                             @endif
                             @if($canDownload)
                                 <a id="ebookLink" href="{{ $downloadUrl }}" download
-                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
+                                   class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     Download
                                 </a>
@@ -255,7 +259,7 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-lib-light text-lib-navy hover:bg-lib-sky hover:text-white text-xs font-bold transition-colors">
+                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-lib-light text-lib-navy hover:bg-lib-sky hover:text-white text-xs font-bold transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
                                             Remove from My List
                                         </button>
@@ -264,57 +268,23 @@
                                     <form method="POST" action="{{ route('mylist.store', $asset) }}">
                                         @csrf
                                         <button type="submit"
-                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
+                                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-lib-navy hover:border-lib-navy text-xs font-bold transition-colors">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
                                             Add to My List
                                         </button>
                                     </form>
                                 @endif
                             @endauth
-                            @if($isAdmin)
-                                <form method="POST" action="{{ route('media.destroy', $asset) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" onclick="confirmDeleteMedia(event)"
-                                            class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-red-50 hover:bg-red-500 text-red-600 hover:text-white text-xs font-bold transition-colors border border-red-100 hover:border-red-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
-                                        Delete
-                                    </button>
-                                </form>
-                            @endif
                         </div>
                     </div>
                 @endif
 
-                <script>
-                    function confirmDeleteMedia(event) {
-                        event.preventDefault();
-                        const form = event.target.closest('form');
-                        Swal.fire({
-                            title: 'Delete this media?',
-                            text: 'This cannot be undone. The file and its metadata will be removed.',
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#dc2626',
-                            cancelButtonColor: '#6c757d',
-                            confirmButtonText: 'Yes, delete',
-                            cancelButtonText: 'Cancel',
-                            reverseButtons: true,
-                            background: '#fff5f5',
-                            customClass: {
-                                popup: 'rounded-2xl border-2 border-red-200 shadow-2xl'
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) form.submit();
-                        });
-                    }
-                </script>
             </aside>
         </div>
 
         {{-- ===== RELATED ITEMS ===== --}}
         @if(($relatedAssets ?? collect())->isNotEmpty())
-            <div class="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+            <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-100 p-6">
                 <div class="flex items-start justify-between gap-3 mb-5">
                     <div>
                         <h2 class="text-lg font-bold text-lib-navy">
@@ -359,7 +329,7 @@
                             <div class="aspect-[3/4] rounded-xl overflow-hidden bg-slate-100 border-2 border-transparent group-hover:border-lib-sky transition-all relative">
                                 <img src="{{ $relThumb }}" alt="{{ $rel->title }}"
                                      class="w-full h-full {{ $isFallback ? 'object-contain p-4 bg-white' : 'object-cover' }} group-hover:scale-105 transition-transform">
-                                <span class="now-viewing hidden absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-lib-sky text-white shadow">Viewing</span>
+                                <span class="now-viewing hidden absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-lib-sky text-white shadow">Viewing</span>
                             </div>
                             <div class="mt-2 px-1">
                                 <p class="text-xs font-bold text-slate-800 line-clamp-1 group-hover:text-lib-sky transition-colors">{{ $rel->title }}</p>
@@ -403,6 +373,7 @@
     function updateMain() {
         const item   = gallery[currentIndex];
         const img    = document.getElementById('mainImage');
+        const videoWrap = document.getElementById('mainVideoWrap');
         const video  = document.getElementById('mainVideo');
         const ebook  = document.getElementById('mainEbook');
         const frame  = document.getElementById('ebookFrame');
@@ -410,13 +381,13 @@
 
         // Reset
         img.classList.add('hidden');
-        video.classList.add('hidden');
+        videoWrap.classList.add('hidden');
         video.pause();
         ebook.classList.add('hidden');
         if (fsBtn) fsBtn.classList.add('hidden');
 
         if (item.type === 'video') {
-            video.classList.remove('hidden');
+            videoWrap.classList.remove('hidden');
             video.src = item.src;
             video.load();
         } else if (item.type === 'ebook') {

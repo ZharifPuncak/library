@@ -4,7 +4,7 @@
 
 @section('content')
 <style>
-    /* Hero Section with Slideshow */
+    /* Hero Section with Slider */
     .hero-section { position: relative; height: calc(100vh - 5rem); min-height: 500px; overflow: hidden; }
     @media (max-width: 768px) {
         .hero-section { height: calc(100vh - 4rem); }
@@ -30,17 +30,17 @@
 
     /* Quick Access Cards */
     .access-card {
-        @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl border border-white/10;
+        @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-lg border border-white/10;
         background: linear-gradient(135deg, #0e3f70 0%, #1e4972 100%);
     }
 </style>
 
-<!-- Hero Slideshow -->
+<!-- Hero Slider -->
 <section class="hero-section">
-    @if(isset($slideshows) && $slideshows->count() > 0)
-        @foreach($slideshows as $index => $slide)
+    @if(isset($sliders) && $sliders->count() > 0)
+        @foreach($sliders as $index => $slide)
             <div class="hero-slide {{ $index === 0 ? 'active' : '' }}">
-                <img class="hero-slide-bg" src="{{ asset('storage/' . $slide->slideshow_pic) }}" alt="{{ $slide->title }}">
+                <img class="hero-slide-bg" src="{{ asset('storage/' . $slide->slider_pic) }}" alt="{{ $slide->title }}">
             </div>
         @endforeach
     @else
@@ -57,7 +57,7 @@
             <h1 class="hero-title uppercase">Digital Repository</h1>
             <p class="hero-subtitle">Puncak Niaga Library Portal</p>
             <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ route('media.index') }}" class="bg-white text-lib-navy px-8 py-3 rounded-full font-bold hover:bg-lib-sky hover:text-white transition-all shadow-lg">Browse Media</a>
+                <a href="{{ route('media.index') }}" class="bg-white text-lib-navy px-8 py-3 rounded-full font-bold hover:bg-lib-sky hover:text-white transition-all shadow-lg">Browse</a>
             </div>
         </div>
     </div>
@@ -70,8 +70,8 @@
     </button>
 
     <div class="slide-nav">
-        @if(isset($slideshows) && $slideshows->count() > 0)
-            @foreach($slideshows as $index => $slide)
+        @if(isset($sliders) && $sliders->count() > 0)
+            @foreach($sliders as $index => $slide)
                 <span class="slide-dot {{ $index === 0 ? 'active' : '' }}" onclick="goToSlide({{ $index }})"></span>
             @endforeach
         @else

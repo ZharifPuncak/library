@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class Media extends Model
@@ -18,6 +19,7 @@ class Media extends Model
         'type',
         'status',
         'title',
+        'description',
         'file_path',
         'file_url',
         'date',
@@ -90,6 +92,19 @@ class Media extends Model
     public function scopePublished($query)
     {
         return $query->where('status', 'published');
+    }
+
+    /** Scope: media visible to this user. Guests and non-admins only see published rows. */
+    public function scopeVisibleTo(Builder $query, ?User $user = null): Builder
+    {
+        return $user?->isAdmin()
+            ? $query
+            : $query->where('status', 'published');
+    }
+
+    public function isVisibleTo(?User $user = null): bool
+    {
+        return $user?->isAdmin() || $this->status === 'published';
     }
 
     /** Scope: rows that belong to a given collection name. */

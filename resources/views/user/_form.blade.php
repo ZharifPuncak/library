@@ -3,7 +3,7 @@
 @endphp
 
 @if($errors->any())
-    <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3 text-sm">
+    <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
         <ul class="list-disc list-inside space-y-1">
             @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
         </ul>

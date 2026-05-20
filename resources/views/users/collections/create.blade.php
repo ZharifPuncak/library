@@ -5,116 +5,110 @@
 @section('content')
 <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
 
-    <div class="mb-6">
-        <a href="{{ route('collections.index') }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-lib-navy transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-            Back to collections
-        </a>
-    </div>
+    @php
+        $floatInput  = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white placeholder-transparent transition-colors';
+        $floatLabel  = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky peer-focus:-top-2.5 peer-focus:left-3 peer-focus:text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:font-normal transition-all pointer-events-none';
+        $staticLabel = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky pointer-events-none';
+        $floatSelect = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white transition-colors appearance-none';
+    @endphp
 
-    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+    <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border border-slate-100 p-8">
         <h1 class="text-xl font-bold text-lib-navy mb-1">Add Collection</h1>
-        <p class="text-sm text-slate-500 mb-6">Group existing media into a named collection.</p>
+        <p class="text-sm text-slate-500 mb-6">Create an empty collection first. After saving, you'll be able to upload files into it.</p>
 
         @if($errors->any())
-            <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-4 py-3 text-sm mb-5">
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-5">
                 <ul class="list-disc list-inside space-y-1">
                     @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
                 </ul>
             </div>
         @endif
 
-        @php
-            $floatInput = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white placeholder-transparent transition-colors';
-            $floatLabel = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky peer-focus:-top-2.5 peer-focus:left-3 peer-focus:text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:font-normal transition-all pointer-events-none';
-            $defaultThumb = asset('images/logo.png');
-        @endphp
-
-        <form method="POST" action="{{ route('collections.store') }}" class="space-y-6"
-              x-data="{
-                  selected: @js(array_map('intval', old('media', []))),
-                  filter: '',
-                  toggle(id) {
-                      const i = this.selected.indexOf(id);
-                      if (i === -1) this.selected.push(id);
-                      else this.selected.splice(i, 1);
-                  }
-              }">
+        <form method="POST" action="{{ route('collections.store') }}" enctype="multipart/form-data" class="space-y-7">
             @csrf
 
             <div class="relative">
-                <input id="name" type="text" name="name" value="{{ old('name') }}" required placeholder=" "
+                <input id="name" type="text" name="name" value="{{ old('name') }}" required placeholder=" " autocomplete="off"
                        class="{{ $floatInput }}">
                 <label for="name" class="{{ $floatLabel }}">Collection name</label>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 p-5">
-                <div class="flex items-center justify-between gap-3 mb-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">Media in this collection</label>
-                        <p class="text-xs text-slate-400 mt-0.5">Pick one or more items. They'll be tagged with the collection name.</p>
-                    </div>
-                    <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full whitespace-nowrap">
+            <div class="relative">
+                <textarea id="description" name="description" rows="3" maxlength="5000" placeholder=" "
+                          class="{{ $floatInput }} min-h-24 resize-y">{{ old('description') }}</textarea>
+                <label for="description" class="{{ $floatLabel }}">
+                    Description <span class="font-normal text-slate-400">(optional)</span>
+                </label>
+            </div>
+
+            <div class="relative">
+                <input id="date" type="date" name="date" value="{{ old('date') }}" placeholder=" "
+                       class="{{ $floatInput }}">
+                <label for="date" class="{{ $staticLabel }}">Date</label>
+            </div>
+
+            <div class="rounded-lg border border-slate-200 p-5">
+                <label for="thumbnail" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
+                    Thumbnail <span class="font-normal normal-case text-slate-400">(optional — applied to all files added later)</span>
+                </label>
+                <input id="thumbnail" type="file" name="thumbnail" accept="image/*"
+                       class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200 transition-colors">
+                <p class="text-xs text-slate-400 mt-1.5">Cover image shared by every item in this collection. Max 1 MB.</p>
+            </div>
+
+            <div class="rounded-lg border border-slate-200 p-5" x-data="{ selected: @js(array_map('intval', old('categories', []))) }">
+                <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                        Categories <span class="font-normal normal-case text-slate-400">(applied to all items)</span>
+                    </label>
+                    <span class="text-[10px] font-bold text-slate-400">
                         <span x-text="selected.length"></span> selected
                     </span>
                 </div>
-
-                <div class="relative mb-4">
-                    <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </span>
-                    <input type="search" x-model="filter" placeholder="Filter media by title…"
-                           autocomplete="off"
-                           class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-lib-sky focus:ring-2 focus:ring-lib-sky/30 transition-colors">
+                <div class="flex flex-wrap gap-2">
+                    @foreach($categories as $cat)
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="categories[]" value="{{ $cat->id }}"
+                                   x-model.number="selected" class="peer hidden">
+                            <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200 peer-checked:bg-lib-navy peer-checked:text-white peer-checked:border-lib-navy hover:border-lib-sky transition-colors">
+                                <svg x-show="selected.includes({{ $cat->id }})" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                {{ $cat->name }}
+                            </span>
+                        </label>
+                    @endforeach
                 </div>
+            </div>
 
-                @if($media->isEmpty())
-                    <div class="py-12 text-center text-slate-400 text-sm">No media available. Add media first, then come back.</div>
-                @else
-                    <div class="max-h-[480px] overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        @foreach($media as $m)
-                            @php
-                                $thumb = $m->thumbnail_path
-                                    ? asset('storage/' . $m->thumbnail_path)
-                                    : ($m->type === 'photo' && $m->file_path ? asset('storage/' . $m->file_path) : null);
-                                $hasThumb = !empty($thumb);
-                            @endphp
-                            <label class="cursor-pointer block"
-                                   x-show="filter === '' || @js(strtolower($m->title)).includes(filter.toLowerCase())">
-                                <input type="checkbox" name="media[]" value="{{ $m->id }}"
-                                       @change="toggle({{ $m->id }})"
-                                       {{ in_array($m->id, old('media', []), true) ? 'checked' : '' }}
-                                       class="peer hidden">
-                                <div class="flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-lib-sky peer-checked:bg-lib-light hover:border-slate-300 transition-colors">
-                                    <div class="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100">
-                                        <img src="{{ $thumb ?? $defaultThumb }}" alt=""
-                                             class="w-full h-full {{ $hasThumb ? 'object-cover' : 'object-contain p-1 bg-white' }}">
-                                    </div>
-                                    <div class="min-w-0 flex-grow">
-                                        <p class="text-sm font-bold text-slate-800 truncate">{{ $m->title }}</p>
-                                        <p class="text-[10px] text-slate-400 uppercase tracking-wider">{{ $m->type }}</p>
-                                    </div>
-                                    <span class="w-5 h-5 rounded-md border-2 border-slate-300 peer-checked:border-lib-sky peer-checked:bg-lib-sky flex items-center justify-center flex-shrink-0"
-                                          :class="selected.includes({{ $m->id }}) ? 'border-lib-sky bg-lib-sky' : ''">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" class="h-3 w-3"
-                                             x-show="selected.includes({{ $m->id }})"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                    </span>
-                                </div>
+            @if($tags->isNotEmpty())
+                <div class="rounded-lg border border-slate-200 p-5" x-data="{ selected: @js(array_map('intval', old('tags', []))) }">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            Tags <span class="font-normal normal-case text-slate-400">(applied to all items)</span>
+                        </label>
+                        <span class="text-[10px] font-bold text-slate-400">
+                            <span x-text="selected.length"></span> selected
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($tags as $tag)
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="tags[]" value="{{ $tag->id }}"
+                                       x-model.number="selected" class="peer hidden">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-50 text-slate-600 border border-slate-200 peer-checked:bg-lib-sky peer-checked:text-white peer-checked:border-lib-sky hover:border-lib-sky transition-colors">
+                                    <svg x-show="selected.includes({{ $tag->id }})" x-cloak xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    #{{ $tag->name }}
+                                </span>
                             </label>
                         @endforeach
                     </div>
-                @endif
-            </div>
+                </div>
+            @endif
 
             <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
-                <a href="{{ route('collections.index') }}"
-                   class="px-5 py-2.5 rounded-full text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</a>
+                <a href="{{ route('media.index') }}"
+                   class="px-4 py-2 rounded-full text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</a>
                 <button type="submit"
-                        :disabled="selected.length === 0"
-                        :class="selected.length === 0
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                            : 'bg-lib-navy hover:bg-lib-sky text-white shadow-md cursor-pointer'"
-                        class="px-6 py-2.5 rounded-full text-sm font-bold transition-colors">
+                        class="px-4 py-2 rounded-full bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
                     Create collection
                 </button>
             </div>

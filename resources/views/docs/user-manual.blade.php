@@ -28,7 +28,7 @@
     <span class="toc-row"><span class="num">7.</span><span class="ttl">Admin: Managing Media</span></span>
     <span class="toc-row"><span class="num">8.</span><span class="ttl">Admin: Categories &amp; Tags</span></span>
     <span class="toc-row"><span class="num">9.</span><span class="ttl">Admin: Users</span></span>
-    <span class="toc-row"><span class="num">10.</span><span class="ttl">Admin: Slideshow</span></span>
+    <span class="toc-row"><span class="num">10.</span><span class="ttl">Admin: Slider</span></span>
     <span class="toc-row"><span class="num">11.</span><span class="ttl">Tips &amp; Troubleshooting</span></span>
 </div>
 
@@ -253,10 +253,10 @@
 <p>From the table, click <strong>Delete</strong> and confirm. <em>You cannot delete your own account.</em></p>
 
 {{-- 10. SLIDESHOW --}}
-<h1>10. Admin: Slideshow</h1>
-<p>The home-page hero carousel pulls from the <strong>Slideshow</strong> table. Use this page to add or remove slides.</p>
+<h1>10. Admin: Slider</h1>
+<p>The home-page hero area pulls from the <strong>Slider</strong> page. Use this page to add or remove slides.</p>
 <ol>
-    <li>From the sidebar, click <strong>Slideshow</strong>.</li>
+    <li>From the sidebar, click <strong>Slider</strong>.</li>
     <li>Type a <strong>Slide title</strong> and pick an image (max 2 MB).</li>
     <li>Click <strong>+ Add Slide</strong>. The new slide appears in the grid below.</li>
     <li>Click the red round button on any tile to delete that slide.</li>

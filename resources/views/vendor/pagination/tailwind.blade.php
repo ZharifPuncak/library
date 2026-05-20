@@ -7,14 +7,14 @@
                 <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">
                     {!! __('Showing') !!}
                     @if ($paginator->firstItem())
-                        <span class="text-lib-navy font-black">{{ $paginator->firstItem() }}</span>
+                        <span class="text-lib-navy font-bold">{{ $paginator->firstItem() }}</span>
                         {!! __('to') !!}
-                        <span class="text-lib-navy font-black">{{ $paginator->lastItem() }}</span>
+                        <span class="text-lib-navy font-bold">{{ $paginator->lastItem() }}</span>
                     @else
                         {{ $paginator->count() }}
                     @endif
                     {!! __('of') !!}
-                    <span class="text-lib-navy font-black">{{ $paginator->total() }}</span>
+                    <span class="text-lib-navy font-bold">{{ $paginator->total() }}</span>
                     {!! __('results') !!}
                 </p>
             </div>
@@ -49,7 +49,7 @@
                             @foreach ($element as $page => $url)
                                 @if ($page == $paginator->currentPage())
                                     <span aria-current="page">
-                                        <span class="relative inline-flex items-center px-4 py-2 -ml-px text-sm font-black text-white bg-lib-navy border border-lib-navy cursor-default leading-5">{{ $page }}</span>
+                                        <span class="relative inline-flex items-center px-4 py-2 -ml-px text-sm font-bold text-white bg-lib-navy border border-lib-navy cursor-default leading-5">{{ $page }}</span>
                                     </span>
                                 @else
                                     <a href="{{ $url }}" class="relative inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-slate-600 bg-white border border-slate-100 leading-5 hover:text-lib-sky hover:bg-slate-50 focus:z-10 focus:outline-none focus:ring ring-lib-sky/50 focus:border-lib-sky transition ease-in-out duration-150" aria-label="{{ __('Go to page :page', ['page' => $page]) }}">

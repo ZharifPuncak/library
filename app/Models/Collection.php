@@ -13,7 +13,25 @@ class Collection extends Model
     protected $fillable = [
         'uuid',
         'name',
+        'description',
+        'status',
+        'date',
+        'thumbnail_path',
     ];
+
+    protected $casts = [
+        'date' => 'datetime',
+    ];
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'collection_category', 'collection_id', 'category_id');
+    }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'collection_tag', 'collection_id', 'tag_id');
+    }
 
     /**
      * Route binding uses the UUID, so URLs read /collections/{uuid}.
