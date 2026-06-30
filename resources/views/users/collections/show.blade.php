@@ -7,6 +7,9 @@
     $defaultThumb = asset('images/logo.png');
     $typeLabels   = ['photo' => 'Photo', 'video' => 'Video', 'ebook' => 'Book'];
     $isAdmin      = auth()->user()?->isAdmin();
+    $inMyList     = auth()->check()
+        ? auth()->user()->myListCollections()->whereKey($collection->id)->exists()
+        : false;
     $previewItems = $assets->getCollection()->map(function ($asset) use ($defaultThumb) {
         $type = strtolower($asset->type);
         $src = $asset->resource_url ?? ($asset->file_path ? asset('storage/' . $asset->file_path) : null);
@@ -71,7 +74,31 @@
             <div class="lg:col-span-8 space-y-4">
 
                 {{-- Title card --}}
-                <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6 flex items-center gap-5">
+                <div class="relative bg-white rounded-lg shadow-sm border border-slate-100 p-6 pr-16 flex items-center gap-5">
+                    @auth
+                        @if($inMyList)
+                            <form method="POST" action="{{ route('mylist.collections.destroy', $collection) }}" class="absolute top-4 right-4">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        title="Remove from My List"
+                                        aria-label="Remove from My List"
+                                        class="w-9 h-9 inline-flex items-center justify-center rounded-lg bg-orange-500 text-white border border-orange-500 hover:bg-orange-600 hover:border-orange-600 transition-colors shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                </button>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('mylist.collections.store', $collection) }}" class="absolute top-4 right-4">
+                                @csrf
+                                <button type="submit"
+                                        title="Add to My List"
+                                        aria-label="Add to My List"
+                                        class="w-9 h-9 inline-flex items-center justify-center rounded-lg bg-white text-orange-500 border border-orange-300 hover:bg-orange-50 hover:border-orange-400 transition-colors shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                                </button>
+                            </form>
+                        @endif
+                    @endauth
                     <div class="w-16 h-20 sm:w-20 sm:h-24 flex-shrink-0 rounded-lg overflow-hidden bg-lib-light flex items-center justify-center text-lib-sky">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-9 w-9"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                     </div>
@@ -88,177 +115,6 @@
                         @endif
                     </div>
                 </div>
-
-                @if($isAdmin)
-                    <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6"
-                          x-data="{
-                            sourceMode: @js(old('source_mode', 'file')),
-                            uploadType: @js(old('upload_type', 'photo')),
-                            files: [],
-                            acceptMap: {
-                                photo: 'image/*',
-                                video: 'video/*',
-                                ebook: '.pdf,.doc,.docx,.xls,.xlsx',
-                            },
-                            get accept() {
-                                return this.acceptMap[this.uploadType] || '';
-                            },
-                            changeType(type) {
-                                this.uploadType = type;
-                                this.files = [];
-                                if (this.$refs.files) this.$refs.files.value = '';
-                            },
-                            changeSource(mode) {
-                                this.sourceMode = mode;
-                                this.files = [];
-                                if (this.$refs.files) this.$refs.files.value = '';
-                            },
-                            addFiles(event) {
-                                const incoming = Array.from(event.target.files || []);
-                                this.files = incoming.map(f => ({
-                                    name: f.name,
-                                    size: f.size,
-                                    kind: this.kindOf(f.name),
-                                }));
-                            },
-                            kindOf(name) {
-                                const ext = (name.split('.').pop() || '').toLowerCase();
-                                if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) return 'photo';
-                                if (['mp4','webm','mov','avi','mkv','m4v'].includes(ext)) return 'video';
-                                if (['pdf','doc','docx','xls','xlsx'].includes(ext)) return 'ebook';
-                                return 'other';
-                            },
-                            prettySize(bytes) {
-                                if (bytes < 1024) return bytes + ' B';
-                                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-                                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-                            }
-                         }">
-                        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
-                            <div>
-                                <h2 class="text-base font-bold text-lib-navy">Add media</h2>
-                                <p class="text-xs text-slate-400 mt-0.5">New media inherit this collection's status, date, thumbnail, categories, and tags.</p>
-                            </div>
-                            <span x-show="sourceMode === 'file'" x-cloak class="text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full">
-                                Max 25 MB each
-                            </span>
-                        </div>
-
-                        <form method="POST" action="{{ route('collections.media.store', $collection) }}" enctype="multipart/form-data" class="space-y-4">
-                            @csrf
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
-                                    Add method
-                                </label>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    @foreach([
-                                        'file' => ['label' => 'Upload file', 'hint' => 'Choose files from your device'],
-                                        'link' => ['label' => 'Add links', 'hint' => 'Paste direct media URLs'],
-                                    ] as $value => $option)
-                                        <label class="cursor-pointer">
-                                            <input type="radio" name="source_mode" value="{{ $value }}"
-                                                   x-model="sourceMode"
-                                                   @change="changeSource('{{ $value }}')"
-                                                   class="peer hidden"
-                                                   {{ old('source_mode', 'file') === $value ? 'checked' : '' }}>
-                                            <span class="block rounded-lg border-2 border-slate-200 bg-white px-4 py-3 transition-colors peer-checked:border-lib-sky peer-checked:bg-lib-light hover:border-lib-sky">
-                                                <span class="block text-sm font-bold text-lib-navy">{{ $option['label'] }}</span>
-                                                <span class="block text-[11px] font-medium text-slate-400 mt-0.5">{{ $option['hint'] }}</span>
-                                            </span>
-                                        </label>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
-                                    Media type
-                                </label>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    @foreach([
-                                        'photo' => ['label' => 'Photos', 'hint' => 'JPG, PNG, GIF, WebP', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>'],
-                                        'video' => ['label' => 'Videos', 'hint' => 'MP4, WebM, MOV',      'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>'],
-                                        'ebook' => ['label' => 'Books',  'hint' => 'PDF, Word, Excel',    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>'],
-                                    ] as $value => $option)
-                                        <label class="cursor-pointer">
-                                            <input type="radio" name="upload_type" value="{{ $value }}"
-                                                   x-model="uploadType"
-                                                   @change="changeType('{{ $value }}')"
-                                                   class="peer hidden"
-                                                   {{ old('upload_type', 'photo') === $value ? 'checked' : '' }}>
-                                            <span class="flex items-center gap-3 rounded-lg border-2 border-slate-200 bg-white px-4 py-3 transition-colors peer-checked:border-lib-sky peer-checked:bg-lib-light hover:border-lib-sky">
-                                                <span class="text-slate-400 peer-checked:text-lib-sky flex-shrink-0">{!! $option['icon'] !!}</span>
-                                                <span>
-                                                    <span class="block text-sm font-bold text-lib-navy">{{ $option['label'] }}</span>
-                                                    <span class="block text-[11px] font-medium text-slate-400 mt-0.5">{{ $option['hint'] }}</span>
-                                                </span>
-                                            </span>
-                                        </label>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            <div class="rounded-lg border border-slate-200 p-5" x-show="sourceMode === 'file'" x-cloak>
-                                <label for="files" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
-                                    Files
-                                </label>
-                                <input id="files" type="file" name="files[]" multiple x-ref="files"
-                                       :required="sourceMode === 'file'"
-                                       @change="addFiles($event)"
-                                       :accept="accept"
-                                       class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-lib-light file:text-lib-navy hover:file:bg-lib-sky hover:file:text-white transition-colors">
-                                <p class="text-xs text-slate-400 mt-1.5">Titles are automatically derived from filenames.</p>
-
-                                <template x-if="files.length > 0">
-                                    <ul class="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
-                                        <template x-for="(file, index) in files" :key="index">
-                                            <li class="flex items-center justify-between gap-3 px-3 py-2 text-xs">
-                                                <div class="flex items-center gap-2 min-w-0">
-                                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
-                                                          :class="{
-                                                            'bg-emerald-100 text-emerald-700': file.kind === 'photo',
-                                                            'bg-purple-100 text-purple-700': file.kind === 'video',
-                                                            'bg-amber-100 text-amber-700': file.kind === 'ebook',
-                                                            'bg-red-100 text-red-700': file.kind === 'other',
-                                                          }" x-text="file.kind"></span>
-                                                    <span class="truncate font-semibold text-slate-700" x-text="file.name"></span>
-                                                </div>
-                                                <span class="text-slate-400 whitespace-nowrap" x-text="prettySize(file.size)"></span>
-                                            </li>
-                                        </template>
-                                    </ul>
-                                </template>
-                            </div>
-
-                            <div class="rounded-lg border border-slate-200 p-5" x-show="sourceMode === 'link'" x-cloak>
-                                <label for="links" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
-                                    Links
-                                </label>
-                                <textarea id="links" name="links" rows="4"
-                                          :required="sourceMode === 'link'"
-                                          placeholder="https://example.com/media-file.pdf"
-                                          class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-sm text-slate-800 bg-white transition-colors resize-y">{{ old('links') }}</textarea>
-                                <p class="text-xs text-slate-400 mt-1.5">Add one direct media URL per line. Links must match the selected media type.</p>
-                            </div>
-
-                            <div class="relative">
-                                <input id="location" type="text" name="location" value="{{ old('location') }}" maxlength="255" placeholder=" "
-                                       class="peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white placeholder-transparent transition-colors">
-                                <label for="location" class="absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky peer-focus:-top-2.5 peer-focus:left-3 peer-focus:text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:font-normal transition-all pointer-events-none">
-                                    Location <span class="font-normal text-slate-400">(optional)</span>
-                                </label>
-                            </div>
-
-                            <div class="flex justify-end">
-                                <button type="submit"
-                                        class="px-4 py-2 rounded-full bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
-                                    <span x-text="sourceMode === 'file' ? 'Upload files' : 'Add links'"></span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                @endif
 
                 {{-- Media list --}}
                 <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6">
@@ -395,16 +251,6 @@
                                                     </div>
 
                                                     <div>
-                                                        <label for="media-status-{{ $asset->id }}" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
-                                                        <select id="media-status-{{ $asset->id }}" name="status"
-                                                                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-lib-sky focus:ring-2 focus:ring-lib-sky/20">
-                                                            @foreach(['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'] as $statusValue => $statusLabel)
-                                                                <option value="{{ $statusValue }}" {{ old('status', $asset->status ?? 'draft') === $statusValue ? 'selected' : '' }}>{{ $statusLabel }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-
-                                                    <div>
                                                         <label for="media-date-{{ $asset->id }}" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Date</label>
                                                         <input id="media-date-{{ $asset->id }}" type="date" name="date" value="{{ old('date', $asset->date?->format('Y-m-d')) }}"
                                                                class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-lib-sky focus:ring-2 focus:ring-lib-sky/20">
@@ -534,14 +380,57 @@
 
                 {{-- Actions --}}
                 @php
-                    $inMyList = auth()->check()
-                        ? auth()->user()->myListCollections()->whereKey($collection->id)->exists()
-                        : false;
                     $actionBase = 'w-full inline-flex items-center justify-between gap-3 px-4 py-2 rounded-lg text-xs font-bold transition-all border group';
                     $iconBase = 'w-9 h-9 rounded-xl inline-flex items-center justify-center flex-shrink-0 transition-colors';
                 @endphp
-                @if($hasDownloadable || $isAdmin || auth()->check())
-                    <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6">
+                @if($isAdmin)
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6"
+                         @if($isAdmin)
+                         x-data="{
+                            mediaFormOpen: @js($errors->any()),
+                            sourceMode: @js(old('source_mode', 'file')),
+                            uploadType: @js(old('upload_type', 'photo')),
+                            files: [],
+                            acceptMap: {
+                                photo: 'image/*',
+                                video: 'video/*',
+                                ebook: '.pdf,.doc,.docx,.xls,.xlsx',
+                            },
+                            get accept() {
+                                return this.acceptMap[this.uploadType] || '';
+                            },
+                            changeType(type) {
+                                this.uploadType = type;
+                                this.files = [];
+                                if (this.$refs.files) this.$refs.files.value = '';
+                            },
+                            changeSource(mode) {
+                                this.sourceMode = mode;
+                                this.files = [];
+                                if (this.$refs.files) this.$refs.files.value = '';
+                            },
+                            addFiles(event) {
+                                const incoming = Array.from(event.target.files || []);
+                                this.files = incoming.map(f => ({
+                                    name: f.name,
+                                    size: f.size,
+                                    kind: this.kindOf(f.name),
+                                }));
+                            },
+                            kindOf(name) {
+                                const ext = (name.split('.').pop() || '').toLowerCase();
+                                if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) return 'photo';
+                                if (['mp4','webm','mov','avi','mkv','m4v'].includes(ext)) return 'video';
+                                if (['pdf','doc','docx','xls','xlsx'].includes(ext)) return 'ebook';
+                                return 'other';
+                            },
+                            prettySize(bytes) {
+                                if (bytes < 1024) return bytes + ' B';
+                                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                            }
+                         }"
+                         @endif>
                         <div class="mb-4">
                             <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Actions</h2>
                             <p class="text-xs text-slate-400 mt-1">Manage this collection.</p>
@@ -559,51 +448,147 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4 opacity-70 group-hover:translate-x-0.5 transition-transform"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                 </a>
                             @endif
-                            @if($hasDownloadable)
-                                <a href="{{ route('collections.download', $collection) }}"
-                                   class="{{ $actionBase }} bg-white hover:bg-slate-50 text-slate-700 hover:text-lib-navy border-slate-200 hover:border-lib-sky">
-                                    <span class="inline-flex items-center gap-3 min-w-0">
-                                        <span class="{{ $iconBase }} bg-slate-50 text-slate-500 group-hover:bg-lib-light group-hover:text-lib-navy">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            @if($isAdmin)
+                                <div>
+                                    <button type="button"
+                                            @click="mediaFormOpen = !mediaFormOpen"
+                                            class="{{ $actionBase }} bg-white hover:bg-slate-50 text-slate-700 hover:text-lib-navy border-slate-200 hover:border-lib-sky">
+                                        <span class="inline-flex items-center gap-3 min-w-0">
+                                            <span class="{{ $iconBase }} bg-slate-50 text-slate-500 group-hover:bg-lib-light group-hover:text-lib-navy">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                            </span>
+                                            <span>Add Media</span>
                                         </span>
-                                        <span>Download .zip</span>
+                                        <span class="inline-flex items-center gap-2">
+                                            <span x-show="mediaFormOpen && sourceMode === 'file'" x-cloak class="hidden sm:inline-flex text-[10px] font-bold text-slate-400">
+                                                Max 25 MB
+                                            </span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                 class="h-4 w-4 text-slate-300 group-hover:text-lib-sky transition-all"
+                                                 :class="mediaFormOpen ? 'rotate-180' : ''">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </span>
+                                    </button>
+
+                                    <div x-show="mediaFormOpen" x-cloak x-transition.opacity class="mt-3 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                                        <form method="POST" action="{{ route('collections.media.store', $collection) }}" enctype="multipart/form-data" class="space-y-4">
+                                            @csrf
+
+                                            <div class="grid grid-cols-1 gap-4">
+                                                <div>
+                                                    <label for="source_mode" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                                                        Add method
+                                                    </label>
+                                                    <select id="source_mode" name="source_mode"
+                                                            x-model="sourceMode"
+                                                            @change="changeSource($event.target.value)"
+                                                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-sm font-semibold text-lib-navy bg-white transition-colors appearance-none">
+                                                        <option value="file" {{ old('source_mode', 'file') === 'file' ? 'selected' : '' }}>Upload file</option>
+                                                        <option value="link" {{ old('source_mode', 'file') === 'link' ? 'selected' : '' }}>Add links</option>
+                                                    </select>
+                                                    <p class="text-xs text-slate-400 mt-1.5" x-text="sourceMode === 'file' ? 'Choose files from your device' : 'Paste direct media URLs'"></p>
+                                                </div>
+
+                                                <div>
+                                                    <label for="upload_type" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                                                        Media type
+                                                    </label>
+                                                    <select id="upload_type" name="upload_type"
+                                                            x-model="uploadType"
+                                                            @change="changeType($event.target.value)"
+                                                            class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-sm font-semibold text-lib-navy bg-white transition-colors appearance-none">
+                                                        <option value="photo" {{ old('upload_type', 'photo') === 'photo' ? 'selected' : '' }}>Photos</option>
+                                                        <option value="video" {{ old('upload_type', 'photo') === 'video' ? 'selected' : '' }}>Videos</option>
+                                                        <option value="ebook" {{ old('upload_type', 'photo') === 'ebook' ? 'selected' : '' }}>Books</option>
+                                                    </select>
+                                                    <p class="text-xs text-slate-400 mt-1.5" x-text="{ photo: 'JPG, PNG, GIF, WebP', video: 'MP4, WebM, MOV', ebook: 'PDF, Word, Excel' }[uploadType]"></p>
+                                                </div>
+                                            </div>
+
+                                            <div class="rounded-lg border border-slate-200 bg-white p-4" x-show="sourceMode === 'file'" x-cloak>
+                                                <label for="files" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
+                                                    Files
+                                                </label>
+                                                <input id="files" type="file" name="files[]" multiple x-ref="files"
+                                                       :required="sourceMode === 'file'"
+                                                       @change="addFiles($event)"
+                                                       :accept="accept"
+                                                       class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-lib-light file:text-lib-navy hover:file:bg-lib-sky hover:file:text-white transition-colors">
+                                                <p class="text-xs text-slate-400 mt-1.5">Titles are automatically derived from filenames.</p>
+
+                                                <template x-if="files.length > 0">
+                                                    <ul class="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
+                                                        <template x-for="(file, index) in files" :key="index">
+                                                            <li class="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                                                                <div class="flex items-center gap-2 min-w-0">
+                                                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
+                                                                          :class="{
+                                                                            'bg-emerald-100 text-emerald-700': file.kind === 'photo',
+                                                                            'bg-purple-100 text-purple-700': file.kind === 'video',
+                                                                            'bg-amber-100 text-amber-700': file.kind === 'ebook',
+                                                                            'bg-red-100 text-red-700': file.kind === 'other',
+                                                                          }" x-text="file.kind"></span>
+                                                                    <span class="truncate font-semibold text-slate-700" x-text="file.name"></span>
+                                                                </div>
+                                                                <span class="text-slate-400 whitespace-nowrap" x-text="prettySize(file.size)"></span>
+                                                            </li>
+                                                        </template>
+                                                    </ul>
+                                                </template>
+                                            </div>
+
+                                            <div class="rounded-lg border border-slate-200 bg-white p-4" x-show="sourceMode === 'link'" x-cloak>
+                                                <label for="links" class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
+                                                    Links
+                                                </label>
+                                                <textarea id="links" name="links" rows="4"
+                                                          :required="sourceMode === 'link'"
+                                                          placeholder="https://example.com/media-file.pdf"
+                                                          class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-sm text-slate-800 bg-white transition-colors resize-y">{{ old('links') }}</textarea>
+                                                <p class="text-xs text-slate-400 mt-1.5">Add one direct media URL per line. Links must match the selected media type.</p>
+                                            </div>
+
+                                            <div class="relative">
+                                                <input id="location" type="text" name="location" value="{{ old('location') }}" maxlength="255" placeholder=" "
+                                                       class="peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white placeholder-transparent transition-colors">
+                                                <label for="location" class="absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky peer-focus:-top-2.5 peer-focus:left-3 peer-focus:text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:font-normal transition-all pointer-events-none">
+                                                    Location <span class="font-normal text-slate-400">(optional)</span>
+                                                </label>
+                                            </div>
+
+                                            <div class="flex justify-end">
+                                                <button type="submit"
+                                                        class="px-4 py-2 rounded-full bg-lib-navy hover:bg-lib-sky text-white text-xs font-bold transition-colors shadow-md">
+                                                    <span x-text="sourceMode === 'file' ? 'Upload files' : 'Add links'"></span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <form method="POST" action="{{ route('collections.status.update', $collection) }}"
+                                      class="{{ $actionBase }} bg-white hover:bg-slate-50 text-slate-700 hover:text-lib-navy border-slate-200 hover:border-lib-sky">
+                                    @csrf
+                                    @method('PUT')
+                                    <span class="inline-flex items-center gap-3 min-w-0 flex-grow">
+                                        <span class="{{ $iconBase }} bg-slate-50 text-slate-500 group-hover:bg-lib-light group-hover:text-lib-navy">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+                                        </span>
+                                        <span>Status</span>
                                     </span>
-                                    <span class="text-[10px] font-bold text-slate-400">{{ $counts['total'] }} items</span>
-                                </a>
+                                    <span class="inline-flex items-center gap-2">
+                                        <select name="status"
+                                                onchange="this.form.submit()"
+                                                class="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-lib-sky focus:ring-2 focus:ring-lib-sky/20">
+                                            @foreach(['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'] as $statusValue => $statusLabel)
+                                                <option value="{{ $statusValue }}" {{ old('status', $collection->status ?? 'draft') === $statusValue ? 'selected' : '' }}>{{ $statusLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </span>
+                                </form>
                             @endif
 
-                            @auth
-                                @if($inMyList)
-                                    <form method="POST" action="{{ route('mylist.collections.destroy', $collection) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="{{ $actionBase }} bg-lib-light hover:bg-lib-sky text-lib-navy hover:text-white border-lib-light hover:border-lib-sky">
-                                            <span class="inline-flex items-center gap-3 min-w-0">
-                                                <span class="{{ $iconBase }} bg-white/70 text-lib-navy group-hover:bg-white/15 group-hover:text-white">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
-                                                </span>
-                                                <span>Remove from My List</span>
-                                            </span>
-                                            <span class="text-[10px] font-bold opacity-70">Saved</span>
-                                        </button>
-                                    </form>
-                                @else
-                                    <form method="POST" action="{{ route('mylist.collections.store', $collection) }}">
-                                        @csrf
-                                        <button type="submit"
-                                                class="{{ $actionBase }} bg-white hover:bg-slate-50 text-slate-700 hover:text-lib-navy border-slate-200 hover:border-lib-sky">
-                                            <span class="inline-flex items-center gap-3 min-w-0">
-                                                <span class="{{ $iconBase }} bg-slate-50 text-slate-500 group-hover:bg-lib-light group-hover:text-lib-navy">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
-                                                </span>
-                                                <span>Add to My List</span>
-                                            </span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4 text-slate-300 group-hover:text-lib-sky group-hover:translate-x-0.5 transition-all"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                                        </button>
-                                    </form>
-                                @endif
-                            @endauth
                             @if($isAdmin)
                                 <div class="pt-3 mt-1 border-t border-slate-100">
                                     <form method="POST" action="{{ route('collections.destroy', $collection) }}">

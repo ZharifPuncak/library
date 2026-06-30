@@ -112,6 +112,33 @@
 
     </header>
 
+    @if(session('status') || session('success') || session('error'))
+        @php
+            $flashType = session('error') ? 'error' : (session('success') ? 'success' : 'status');
+            $flashMessage = session('error') ?? session('success') ?? session('status');
+            $flashClass = $flashType === 'error'
+                ? 'bg-red-50 border-red-200 text-red-700'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-700';
+        @endphp
+        <div x-data="{ show: true }"
+             x-init="setTimeout(() => show = false, 3500)"
+             x-show="show"
+             x-transition.opacity
+             x-cloak
+             class="fixed right-4 top-20 md:top-24 z-[70] w-[min(calc(100vw-2rem),24rem)]">
+            <div role="alert" class="rounded-lg border bg-white px-4 py-3 text-sm font-semibold shadow-md {{ $flashClass }}">
+                <div class="flex items-start justify-between gap-3">
+                    <span>{{ $flashMessage }}</span>
+                    <button type="button" @click="show = false"
+                            class="-mr-1 rounded p-0.5 text-current opacity-60 hover:opacity-100 transition-opacity"
+                            aria-label="Dismiss notification">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- Left sidenav for authenticated users (admin items + personal items) -->
     @auth
         @if(!request()->routeIs('home'))
@@ -154,13 +181,13 @@
 
             <div class="flex-grow flex flex-col"
                  x-data="{
-                    collapsed: localStorage.getItem('adminSidebarCollapsed') === '1',
-                    mobileOpen: false,
-                    toggle() {
-                        this.collapsed = !this.collapsed;
-                        localStorage.setItem('adminSidebarCollapsed', this.collapsed ? '1' : '0');
-                    }
-                 }">
+                    collapsed: true,
+                    sidebarHovered: false,
+                    get sidebarExpanded() {
+                        return !this.collapsed || this.sidebarHovered;
+                    },
+                    mobileOpen: false
+                  }">
 
                 {{-- Mobile top strip: hamburger on the left --}}
                 <div class="md:hidden sticky top-16 md:top-20 z-40 bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
@@ -229,55 +256,43 @@
 
                 {{-- Desktop fixed sidebar --}}
                 <aside class="hidden md:flex flex-col fixed left-0 top-16 md:top-20 bottom-0 z-30 bg-white border-r border-slate-200 transition-all duration-200"
-                       :class="collapsed ? 'w-16' : 'w-56'">
-                    <div class="flex items-center px-3 py-3 border-b border-slate-100"
-                         :class="collapsed ? 'justify-center' : 'justify-between'">
-                        <span x-show="!collapsed" x-transition.opacity
-                              class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ $isAdminUser ? 'Admin Menu' : 'Menu' }}</span>
-                        <button type="button" @click="toggle"
-                                class="p-1.5 rounded-lg text-slate-400 hover:text-lib-navy hover:bg-slate-100 transition-colors"
-                                :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4 transition-transform"
-                                 :class="collapsed ? 'rotate-180' : ''">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <nav class="flex-1 px-2 pt-3 space-y-1.5 overflow-y-auto">
+                       @mouseenter="sidebarHovered = true"
+                       @mouseleave="sidebarHovered = false"
+                       :class="sidebarExpanded ? 'w-56 shadow-xl shadow-slate-900/5' : 'w-16'">
+                    <nav class="flex-1 px-2 pt-4 space-y-1.5 overflow-y-auto">
                         @if($isAdminUser)
                             @foreach($adminLinks as $link)
                                 <a href="{{ $link['route'] }}"
                                    class="flex items-center gap-3 rounded-xl text-sm font-semibold transition-colors {{ $link['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-600 hover:bg-slate-50 hover:text-lib-navy' }}"
-                                   :class="collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'"
+                                   :class="sidebarExpanded ? 'px-3 py-2.5' : 'justify-center p-2.5'"
                                    :title="@js($link['label'])">
                                     {!! $link['icon'] !!}
-                                    <span x-show="!collapsed" x-transition.opacity>{{ $link['label'] }}</span>
+                                    <span x-show="sidebarExpanded" x-transition.opacity>{{ $link['label'] }}</span>
                                 </a>
                             @endforeach
-                            <hr class="my-3 border-slate-200" :class="collapsed ? 'mx-2' : 'mx-1'">
+                            <hr class="my-3 border-slate-200" :class="sidebarExpanded ? 'mx-1' : 'mx-2'">
                         @else
                             @foreach($userOnlyLinks as $link)
                                 <a href="{{ $link['route'] }}"
                                    class="flex items-center gap-3 rounded-xl text-sm font-semibold transition-colors {{ $link['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : 'text-slate-600 hover:bg-slate-50 hover:text-lib-navy' }}"
-                                   :class="collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'"
+                                   :class="sidebarExpanded ? 'px-3 py-2.5' : 'justify-center p-2.5'"
                                    :title="@js($link['label'])">
                                     {!! $link['icon'] !!}
-                                    <span x-show="!collapsed" x-transition.opacity>{{ $link['label'] }}</span>
+                                    <span x-show="sidebarExpanded" x-transition.opacity>{{ $link['label'] }}</span>
                                 </a>
                             @endforeach
-                            <hr class="my-3 border-slate-200" :class="collapsed ? 'mx-2' : 'mx-1'">
+                            <hr class="my-3 border-slate-200" :class="sidebarExpanded ? 'mx-1' : 'mx-2'">
                         @endif
                         @foreach($personalLinks as $link)
                             <a href="{{ $link['route'] }}"
                                @if(!empty($link['external'])) target="_blank" rel="noopener noreferrer" @endif
                                class="flex items-center gap-3 rounded-xl text-sm font-semibold transition-colors {{ $link['active'] ? 'bg-lib-sky text-white shadow-md shadow-lib-sky/30' : (!empty($link['external']) ? 'text-amber-600 bg-amber-50 hover:bg-amber-100' : 'text-slate-600 hover:bg-slate-50 hover:text-lib-navy') }}"
-                               :class="collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5'"
+                               :class="sidebarExpanded ? 'px-3 py-2.5' : 'justify-center p-2.5'"
                                :title="@js($link['label'])">
                                 {!! $link['icon'] !!}
-                                <span x-show="!collapsed" x-transition.opacity>{{ $link['label'] }}</span>
+                                <span x-show="sidebarExpanded" x-transition.opacity>{{ $link['label'] }}</span>
                                 @if(!empty($link['external']))
-                                    <svg x-show="!collapsed" x-transition.opacity xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="ml-auto h-3.5 w-3.5 opacity-70"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    <svg x-show="sidebarExpanded" x-transition.opacity xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="ml-auto h-3.5 w-3.5 opacity-70"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                 @endif
                             </a>
                         @endforeach
@@ -298,38 +313,6 @@
     @else
         <main class="flex-grow">@yield('content')</main>
     @endauth
-
-    <!-- Footer -->
-    <footer class="bg-lib-navy text-white py-6">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <div class="text-sm opacity-60">
-                &copy; {{ date('Y') }} ICTD. All rights reserved.
-            </div>
-        </div>
-    </footer>
-
-    @if(session('status') || session('success') || session('error'))
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#f0f7ff',
-                    customClass: { popup: 'rounded-lg border-2 border-lib-sky shadow-lg' },
-                });
-                @if(session('error'))
-                    Toast.fire({ icon: 'error', title: @json(session('error')) });
-                @elseif(session('success'))
-                    Toast.fire({ icon: 'success', title: @json(session('success')) });
-                @elseif(session('status'))
-                    Toast.fire({ icon: 'success', title: @json(session('status')) });
-                @endif
-            });
-        </script>
-    @endif
 
     <script shadow-script>
         // Logout Confirmation

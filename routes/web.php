@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/collections/{collection}/edit',            [App\Http\Controllers\UserCollectionController::class, 'edit'])     ->name('collections.edit');
     Route::get('/collections/{collection}/download',        [App\Http\Controllers\UserCollectionController::class, 'download'])  ->name('collections.download');
     Route::put('/collections/{collection}',                 [App\Http\Controllers\UserCollectionController::class, 'update'])   ->name('collections.update');
+    Route::put('/collections/{collection}/status',          [App\Http\Controllers\UserCollectionController::class, 'updateStatus'])->name('collections.status.update');
     Route::delete('/collections/{collection}',              [App\Http\Controllers\UserCollectionController::class, 'destroy'])  ->name('collections.destroy');
     Route::post('/collections/{collection}/media',          [App\Http\Controllers\UserCollectionController::class, 'addMedia']) ->name('collections.media.store');
     Route::put('/collections/{collection}/media/{media}',    [App\Http\Controllers\UserCollectionController::class, 'updateMedia'])->name('collections.media.update');

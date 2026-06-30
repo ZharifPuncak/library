@@ -298,7 +298,7 @@
 
                     {{-- Grid view --}}
                     @if($currentView === 'grid')
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-[repeat(auto-fill,minmax(11rem,11rem))] gap-4">
                             @forelse($collections as $collection)
                                 @php
                                     $thumbUrl     = $collection->thumbnail_path

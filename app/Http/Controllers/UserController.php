@@ -34,7 +34,13 @@ class UserController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('user.index', compact('users', 'search'));
+        $stats = [
+            'total'  => User::count(),
+            'admins' => User::where('role', 'admin')->count(),
+            'users'  => User::where('role', 'user')->count(),
+        ];
+
+        return view('user.index', compact('users', 'search', 'stats'));
     }
 
     public function create()
