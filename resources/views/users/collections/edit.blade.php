@@ -27,37 +27,9 @@
             $floatInput  = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white placeholder-transparent transition-colors';
             $floatLabel  = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky peer-focus:-top-2.5 peer-focus:left-3 peer-focus:text-xs peer-placeholder-shown:top-3.5 peer-placeholder-shown:left-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-placeholder-shown:font-normal transition-all pointer-events-none';
             $staticLabel = 'absolute left-3 -top-2.5 px-1.5 bg-white text-xs font-semibold text-slate-500 peer-focus:text-lib-sky pointer-events-none';
-            $floatSelect = 'peer w-full px-4 pt-4 pb-2 rounded-xl border-2 border-slate-200 focus:border-lib-sky focus:outline-none text-slate-800 bg-white transition-colors appearance-none';
         @endphp
 
-        <form method="POST" action="{{ route('collections.update', $collection) }}" enctype="multipart/form-data" class="space-y-7"
-              x-data="{
-                  status: @js(old('status', $sharedStatus)),
-                  mediaCount: @js($mediaCount),
-                  unpublishedCount: @js($unpublishedCount),
-                  async handleSubmit(event) {
-                      if (this.status !== 'published') { event.target.submit(); return; }
-                      let msg = '';
-                      if (this.mediaCount === 0) {
-                          msg = 'This collection has no media attached. Are you sure you want to publish it?';
-                      } else if (this.unpublishedCount > 0) {
-                          msg = `${this.unpublishedCount} media item(s) in this collection are not published yet. Publishing the collection will not automatically publish them. Continue?`;
-                      }
-                      if (!msg) { event.target.submit(); return; }
-                      const result = await Swal.fire({
-                          title: 'Publish collection?',
-                          text: msg,
-                          icon: 'warning',
-                          showCancelButton: true,
-                          confirmButtonText: 'Yes, publish',
-                          cancelButtonText: 'Cancel',
-                          confirmButtonColor: '#0369a1',
-                          cancelButtonColor: '#94a3b8',
-                      });
-                      if (result.isConfirmed) event.target.submit();
-                  }
-              }"
-              @submit.prevent="handleSubmit($event)">
+        <form method="POST" action="{{ route('collections.update', $collection) }}" enctype="multipart/form-data" class="space-y-7">
             @csrf
             @method('PUT')
 
@@ -75,24 +47,10 @@
                 </label>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div class="relative">
-                    <select id="status" name="status" class="{{ $floatSelect }}"
-                            x-model="status">
-                        <option value="draft">Draft</option>
-                        <option value="published">Published</option>
-                        <option value="archived">Archived</option>
-                    </select>
-                    <label for="status" class="{{ $staticLabel }}">Status (applied to all)</label>
-                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                    </span>
-                </div>
-                <div class="relative">
-                    <input id="date" type="date" name="date" value="{{ old('date', $sharedDate) }}" placeholder=" "
-                           class="{{ $floatInput }}">
-                    <label for="date" class="{{ $staticLabel }}">Date (applied to all)</label>
-                </div>
+            <div class="relative">
+                <input id="date" type="date" name="date" value="{{ old('date', $sharedDate) }}" placeholder=" "
+                       class="{{ $floatInput }}">
+                <label for="date" class="{{ $staticLabel }}">Date (applied to all)</label>
             </div>
 
             <div class="rounded-lg border border-slate-200 p-5">

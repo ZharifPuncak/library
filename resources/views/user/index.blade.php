@@ -25,7 +25,36 @@
         <p class="text-sm text-slate-500 mt-1 max-w-2xl">Manage staff accounts, roles, and library access.</p>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        {{-- ============ LEFT: STATS CARD (4 cols) ============ --}}
+        <aside class="lg:col-span-4">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-100 p-6 space-y-5 lg:sticky lg:top-8">
+                <div>
+                    <h2 class="text-sm font-bold text-lib-navy">Overview</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">A snapshot of your user base.</p>
+                </div>
+
+                <div class="rounded-lg bg-lib-navy text-white p-5">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-white/70">Total Users</p>
+                    <p class="text-3xl font-bold mt-1">{{ $stats['total'] }}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Admins</p>
+                        <p class="text-2xl font-bold text-lib-navy mt-1">{{ $stats['admins'] }}</p>
+                    </div>
+                    <div class="rounded-lg border border-slate-100 bg-slate-50 p-4">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Members</p>
+                        <p class="text-2xl font-bold text-lib-navy mt-1">{{ $stats['users'] }}</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        {{-- ============ RIGHT: USER LIST (8 cols) ============ --}}
+        <div class="lg:col-span-8 bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
 
         <div class="flex flex-col gap-4 p-6 border-b border-slate-100">
             <div class="flex justify-end">
@@ -153,6 +182,7 @@
                 {{ $users->links() }}
             </div>
         @endif
+        </div>
     </div>
 </div>
 @endsection

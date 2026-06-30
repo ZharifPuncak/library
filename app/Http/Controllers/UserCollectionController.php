@@ -172,7 +172,6 @@ class UserCollectionController extends Controller
         $data = $request->validate([
             'name'         => ['required', 'string', 'max:255', 'unique:collections,name,' . $collection->id],
             'description'  => ['nullable', 'string', 'max:5000'],
-            'status'       => ['nullable', 'in:draft,published,archived'],
             'date'         => ['nullable', 'date'],
             'thumbnail'    => ['nullable', 'image', 'max:1024'],
             'categories'   => ['nullable', 'array'],
@@ -197,7 +196,6 @@ class UserCollectionController extends Controller
             Storage::disk('public')->delete($collection->thumbnail_path);
         }
 
-        $status = $data['status'] ?? 'draft';
         $date   = $data['date']   ?? $collection->date ?? now();
         $catIds = $data['categories'] ?? [];
         $tagIds = $data['tags']       ?? [];
@@ -205,7 +203,6 @@ class UserCollectionController extends Controller
         $collection->update([
             'name'           => $newName,
             'description'    => $data['description'] ?? null,
-            'status'         => $status,
             'date'           => $date,
             'thumbnail_path' => $thumb ?? $collection->thumbnail_path,
         ]);
@@ -218,7 +215,6 @@ class UserCollectionController extends Controller
         $existing = Media::inCollection($newName)->get();
         foreach ($existing as $m) {
             $m->update([
-                'status'         => $status,
                 'date'           => $date,
                 'thumbnail_path' => $finalThumb,
             ]);
@@ -229,6 +225,27 @@ class UserCollectionController extends Controller
         return redirect()
             ->route('collections.show', $collection)
             ->with('status', 'Collection updated.');
+    }
+
+    public function updateStatus(Request $request, Collection $collection)
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $data = $request->validate([
+            'status' => ['required', 'in:draft,published,archived'],
+        ]);
+
+        $collection->update([
+            'status' => $data['status'],
+        ]);
+
+        Media::inCollection($collection->name)->update([
+            'status' => $data['status'],
+        ]);
+
+        return redirect()
+            ->route('collections.show', $collection)
+            ->with('status', 'Collection status updated.');
     }
 
     public function destroyMedia(Collection $collection, Media $media)
@@ -260,7 +277,6 @@ class UserCollectionController extends Controller
         $data = $request->validate([
             'title'       => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'status'      => ['required', 'in:draft,published,archived'],
             'date'        => ['nullable', 'date'],
             'location'    => ['nullable', 'string', 'max:255'],
             'file_url'    => ['nullable', 'url', 'max:2048'],
@@ -273,7 +289,6 @@ class UserCollectionController extends Controller
         $media->update([
             'title'       => $data['title'],
             'description' => $data['description'] ?? null,
-            'status'      => $data['status'],
             'date'        => $data['date'] ?? null,
             'file_url'    => $fileUrl,
         ]);

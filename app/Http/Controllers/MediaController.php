@@ -90,7 +90,7 @@ class MediaController extends Controller
         $cookieView    = strtolower((string) $request->cookie('media_view', ''));
         $view          = in_array($requestedView, ['grid', 'list'], true)
             ? $requestedView
-            : (in_array($cookieView, ['grid', 'list'], true) ? $cookieView : 'grid');
+            : 'list';
 
         $response = response()->view('users.all',
             compact('collections', 'mediaCounts', 'categories', 'tags', 'view', 'activeStatus', 'statusCounts')
